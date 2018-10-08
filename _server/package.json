@@ -1,0 +1,12 @@
+{
+  "name": "Template",
+  "version": "0.0.1",
+  "description": "Template description",
+  "dependencies": {
+    "express": "^4.15.2",
+    "md5": "^2.2.1",
+    "mysql": "^2.16.0",
+    "socket.io": "^2.0.3",
+    "sqlstring": "^2.3.1"
+  }
+}

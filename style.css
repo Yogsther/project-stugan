@@ -1,0 +1,29 @@
+*{
+  font-family: 'Roboto', sans-serif;
+}
+
+body{
+  background: #111;
+}
+
+#wrap{
+  width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+#canvas{
+  margin: 0 auto;
+  display: block;
+  position: relative;
+  background-image: url("textures/misc/splash.png")
+}
+
+button, input{
+  margin-top: 5px;
+  position: relative;
+}
+
+button{
+  cursor: pointer;
+}

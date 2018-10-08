@@ -1,0 +1,6 @@
+{
+    "name": "Stone",
+    "id": 0,
+    "type": "weapon",
+    "texture": "items/weapons/stone.png"
+}

@@ -37,7 +37,7 @@ con.connect(function (err) {
 /* World arrays */
 
 var items = new Array(); // Index of items, loaded from /items/ (Not live items, just for refrence)
-var map = new Array(); // Map of the entire world
+var map = JSON.parse(fs.readFileSync("map.json", "utf8"));
 var players = new Array(); // All active players
 var npcs = new Array(); // All active NPC's
 
@@ -52,8 +52,8 @@ var server = app.listen(port, function () {
   var io = socket(server);
 
   // Start tick, 20 ticks/s
-  setInterval(() => tick(), 1000/ticks);
-  
+  setInterval(() => tick(), 1000 / ticks);
+
   /**
    * Load a player into the server, get all items etc 
    */
@@ -80,21 +80,16 @@ var server = app.listen(port, function () {
         player.position.y = res.position_y;
         player.username = res.username; // ensure capital letters are correct
         player.id = res.id;
+        player.outfit = JSON.parse(res.outfit);
+        if (res.inventory == "") player.inventory = [];
+        else player.inventory = JSON.parse(res.inventory);
 
-        con.query("SELECT * FROM `items` WHERE owner_id = " + player.id, (error, result) => {
-          if (!error) {
-            for (item of result) {
-              player.inventory.push(item);
-            }
-
-            players.push(player);
-            io.to(player.socketid).emit("game", {
-              map: map,
-              player: player
-            })
-          }
+        players.push(player);
+        io.to(player.socketid).emit("game", {
+          map: map,
+          items: items,
+          player: player
         })
-
       }
     })
 
@@ -102,7 +97,11 @@ var server = app.listen(port, function () {
 
   }
 
+  var totalTicks = 0;
   function tick() {
+
+    totalTicks++;
+    if(totalTicks % (ticks*1) == 0) console.log(totalTicks)
 
     /* Gather data for from all players */
     clientPlayerData = new Array();
@@ -111,7 +110,8 @@ var server = app.listen(port, function () {
         position: player.position,
         username: player.username,
         walking: player.walking,
-        flipped: player.flipped
+        flipped: player.flipped,
+        outfit: player.outfit
       })
     }
 
@@ -125,26 +125,29 @@ var server = app.listen(port, function () {
   }
 
   function disconnectPlayer(socketid) {
-    for(let i = 0; i < players.length; i++){
-      if(players[i].socketid === socketid){
+    for (let i = 0; i < players.length; i++) {
+      if (players[i].socketid === socketid) {
         players.splice(i, 1);
         return;
       }
     }
   }
 
-  
+
 
   io.on("connection", (socket) => {
 
-    function getPlayer(){ for(p of players) if(p.socketid == socket.id) return p }
+    function getPlayer() {
+      for (p of players)
+        if (p.socketid == socket.id) return p
+    }
 
     /* Server-side movement, and flipping */
     socket.on("move", movement => {
       player = getPlayer();
-      if(player){
-        p.position.x+=movement.x;
-        p.position.y+=movement.y;
+      if (player) {
+        p.position.x += movement.x;
+        p.position.y += movement.y;
         p.flipped = movement.flipped;
       }
     })

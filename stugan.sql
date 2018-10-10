@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 08, 2018 at 11:46 PM
+-- Generation Time: Oct 10, 2018 at 11:36 PM
 -- Server version: 10.1.35-MariaDB
 -- PHP Version: 7.2.9
 
@@ -22,74 +22,13 @@ SET time_zone = "+00:00";
 -- Database: `stugan`
 --
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `items`
+-- Dumping data for table `users`
 --
 
-CREATE TABLE `items` (
-  `item_id` int(11) NOT NULL,
-  `owner_id` int(11) NOT NULL,
-  `enchantment` int(11) NOT NULL,
-  `ai_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
---
--- Dumping data for table `items`
---
-
-INSERT INTO `items` (`item_id`, `owner_id`, `enchantment`, `ai_id`) VALUES
-(0, 0, 0, 1);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
-
-CREATE TABLE `users` (
-  `username` varchar(20) COLLATE utf8_bin NOT NULL,
-  `password` varchar(128) COLLATE utf8_bin NOT NULL,
-  `id` int(11) NOT NULL,
-  `xp` bigint(20) NOT NULL,
-  `position_x` bigint(20) NOT NULL,
-  `position_y` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `items`
---
-ALTER TABLE `items`
-  ADD PRIMARY KEY (`ai_id`),
-  ADD KEY `owner_id` (`owner_id`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `items`
---
-ALTER TABLE `items`
-  MODIFY `ai_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+INSERT INTO `users` (`username`, `password`, `id`, `xp`, `position_x`, `position_y`, `outfit`, `inventory`) VALUES
+('Olle', '74243d8f2a60c072dee87450ee49425a', 16, 0, 0, 0, '{}', ''),
+('Test', '74243d8f2a60c072dee87450ee49425a', 18, 0, 0, 0, '{}', '');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

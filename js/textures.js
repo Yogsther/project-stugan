@@ -5,9 +5,30 @@
 
 */
 
-var textures = ["bodies/1.png", "bodies/1_flipped.png", "tiles/temp_ground.jpg"];
+var textures = [
+    "bodies/1.png",
+    "bodies/1_flipped.png",
+    "items/headwear/stone_helmet.png",
+    "items/headwear/stone_helmet_flipped.png",
+    "items/pants/brown_belt.png",
+    "items/pants/brown_belt_flipped.png",
+    "items/shirts/blue.png",
+    "items/shirts/blue_flipped.png",
+    "items/beards/brown_beard.png",
+    "items/beards/brown_beard_flipped.png",
+    "ui/inventory_closed.png",
+    "ui/inventory_open.png",
+    "ui/ui_bar.png",
+    "ui/inventory.png"
+];
+
+var tiles = [
+    "tiles/stone_ground.png",
+    "tiles/grass.png"
+]
 
 textures.forEach(texture => importTexture(texture));
+tiles.forEach(texture => importTexture(texture));
 
 function t(name) {
     return textures[name];

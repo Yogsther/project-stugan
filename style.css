@@ -1,9 +1,16 @@
 *{
   font-family: 'Roboto', sans-serif;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+   -khtml-user-select: none; /* Konqueror HTML */
+     -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* Internet Explorer/Edge */
+          user-select: none;
 }
 
 body{
   background: #111;
+  color: white;
 }
 
 #wrap{
@@ -16,6 +23,9 @@ body{
   margin: 0 auto;
   display: block;
   position: relative;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  cursor: pointer;
   background-image: url("textures/misc/splash.png")
 }
 
@@ -27,3 +37,27 @@ button, input{
 button{
   cursor: pointer;
 }
+
+a{
+  color: white;
+  text-decoration: none;
+}
+a:visited{
+  color: white;
+}
+a:active{
+  color: grey;
+}
+
+
+#editor-textures{
+  color: white !important;
+  text-decoration: none;
+}
+
+.tile{
+  margin-top: 10px;
+  margin-right: 2px;
+}
+
+

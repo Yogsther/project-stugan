@@ -1,0 +1,6 @@
+{
+    "name": "Blue shirt",
+    "id": 3,
+    "type": "shirt",
+    "texture": "items/shirts/blue.png"
+}

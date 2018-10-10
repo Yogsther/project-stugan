@@ -6,6 +6,12 @@ if(localStorage.getItem("cred") !== undefined){
     document.getElementById("password").value = cred.password;
 }
 
+var autolog = localStorage.getItem("autologin");
+if(autolog === "true"){
+    login();
+    document.getElementById("autologin").checked = autolog;
+}
+
 function getCredentials(){
     return {
         username: document.getElementById("username").value,
@@ -23,6 +29,12 @@ function login(){
 
 function sign_up(){
     socket.emit("sign_up", getCredentials())
+}
+
+
+function autologin(value){
+    console.log(value.checked)
+    localStorage.setItem("autologin", value.checked);
 }
 
 /* socket.on("token", token => {

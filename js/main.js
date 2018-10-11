@@ -1,4 +1,4 @@
-var socket = io.connect("172.20.1.85:5234");
+var socket = io.connect("localhost:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -35,9 +35,8 @@ socket.on("game", package => {
     items = package.items;
     map = package.map;
     player = package.player;
+    for(pack of package.chat) addChatMessage(pack);
 })
-
-socket.on("re", () => {console.log("got it")})
 
 // Updated each tick
 socket.on("tick", package => {
@@ -233,6 +232,7 @@ canvas.addEventListener("click", e => {
 
 document.addEventListener("keydown", e => {
     keysDown[e.keyCode] = true;
+    if(e.code == "Enter") document.getElementById("chat-input").focus();
 })
 
 document.addEventListener("keyup", e => {
@@ -244,14 +244,14 @@ function keyDown(key) {
     return false;
 }
 
-
 function move(x, y) {
+    if(document.getElementById("chat-input") == document.activeElement) return; // Prevent moving while chatting
     var speed = 5;
     if(keyDown(16)) speed /= 3;
     if (x > 0) player.flipped = true;
     if (x < 0) player.flipped = false;
-    localMove.x += x * speed;
-    localMove.y += y * speed;
+    localMove.x += Math.round(x * speed);
+    localMove.y += Math.round(y * speed);
 }
 
 function logic() {
@@ -309,4 +309,30 @@ function draw(sprite, x, y, scale, flipped, ignoreCamera, rotation, opacity) {
         else ctx.drawImage(sprite, x - camera.x, y - camera.y, width, height);
 
     ctx.restore();
+}
+
+// CHAT
+
+document.getElementById("chat-input").addEventListener("keyup", e => {
+    if(e.code == "Enter"){
+        var chatInput = document.getElementById("chat-input");
+        socket.emit("chat", chatInput.value);
+        chatInput.value = "";
+    }
+})
+
+socket.on("chat", package => {
+    addChatMessage(package);
+})
+
+function addChatMessage(pack){
+    chatWindow = document.getElementById("chat-window");
+    chatWindow.innerHTML += '<span class="chat-message"><span style="color:' + pack.color + ';">' + sanitizeHTML(pack.sender) + ':</span> ' + sanitizeHTML(pack.message) + '</span>';
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    function sanitizeHTML(str) {
+        var temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    };
 }

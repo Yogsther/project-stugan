@@ -1,11 +1,15 @@
 *{
   font-family: 'Roboto', sans-serif;
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Safari */
-   -khtml-user-select: none; /* Konqueror HTML */
-     -moz-user-select: none; /* Firefox */
-      -ms-user-select: none; /* Internet Explorer/Edge */
-          user-select: none;
+ 
+}
+
+::-webkit-scrollbar {
+  background-color: black;
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #3a3a3a;
 }
 
 img{
@@ -28,9 +32,16 @@ body{
   display: block;
   position: relative;
   margin-top: 25px;
-  margin-bottom: 10px;
   cursor: pointer;
-  background-image: url("textures/misc/splash.png")
+  background-image: url("textures/misc/splash.png");
+  z-index: 10;
+
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+   -khtml-user-select: none; /* Konqueror HTML */
+     -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* Internet Explorer/Edge */
+          user-select: none;
 }
 
 button, input{
@@ -62,6 +73,67 @@ a:active{
 .tile{
   margin-top: 10px;
   margin-right: 2px;
+}
+
+#old-layout{
+  position: relative;
+}
+
+#bottom{
+  height: 300px;
+  width: 900px;
+  margin: 0 auto;
+  display: block;
+  background: rgb(2, 2, 2);
+  position: relative;
+}
+
+#chat-window{
+  height: 240px;
+  width: 435px;
+  background: rgb(36, 36, 36);
+  top: 10px;
+  left: 10px;
+  position: absolute;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#chat-input{
+  height: 30px;
+  width: 415px;
+  bottom: 10px;
+  left: 10px;
+  padding: 0px;
+  padding-left: 10px;
+  padding-right: 10px;
+  position: absolute;
+  font-family: "Roboto" !important;
+  border: none;
+  background: #111;
+  color: white;
+}
+
+#chat-input:focus {outline:0;}
+
+.chat-message{
+  position: relative;
+  display: block;
+  min-height: 5px;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+  background: rgb(20, 20, 20);
+}
+
+#inventory-window{
+  height: 280px;
+  width: 435px;
+  background: rgb(36, 36, 36);
+  top: 10px;
+  right: 10px;
+  position: absolute;
 }
 
 

@@ -15,7 +15,24 @@
   <div id="wrap">
     <!-- Game canvas -->
     <canvas id="canvas" width="900" height="506"></canvas>
+    <!-- Chat and inventory -->
+    <div id="bottom">
+      <div id="chat-window">
+        
+
+      </div>
+
+      <input type="text" id="chat-input" placeholder="Chat... [ENTER]" maxlength="100">
+
+      <div id="inventory-window"></div>
+
+
+    </div>
+
+
+
     <!-- Ugly ass login shit, very temp -->
+    <div id="old-layout">
     <input type="text" placeholder="Username" id="username">
     <input type="password" placeholder="Password" id="password">
     <button onclick="sign_up()">Sign up</button> <button onclick="login()">Login</button>
@@ -24,6 +41,7 @@
 
     <div id="editor-textures"><br></div>
     <div id="all-items"> </div>
+    </div>
 
   </div>
 

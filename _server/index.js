@@ -25,7 +25,7 @@ var app = express();
 var con = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "nicke",
+  password: "",
   database: "stugan"
 });
 
@@ -40,6 +40,10 @@ var items = new Array(); // Index of items, loaded from /items/ (Not live items,
 var map = JSON.parse(fs.readFileSync("map.json", "utf8"));
 var players = new Array(); // All active players
 var npcs = new Array(); // All active NPC's
+var chat = new Array();
+
+var joinedMessages = ["appeared out of nowhere!", "jumped in!", "hopped in!", "joined the game!", "flew in!", "is here!", "dab!"]
+var leftMessages = ["is no longer with us.", "has left us.", "commited.", "went somewhere else.", "left the game.", "yeeeted."]
 
 
 loadItemsLibary(); // Read all JSON's with item data.
@@ -57,10 +61,13 @@ var server = app.listen(port, function () {
   /**
    * Load a player into the server, get all items etc 
    */
+
   function loginPlayer(username, socketid) {
     /* Make sure user is not already logged in */
     for (player of players)
       if (player.username == username) return;
+    
+    sendChat(username + " " + joinedMessages[Math.floor(Math.random()*joinedMessages.length)], "#f4d742", "Server");
 
     var player = {
       inventory: [],
@@ -88,13 +95,26 @@ var server = app.listen(port, function () {
         io.to(player.socketid).emit("game", {
           map: map,
           items: items,
-          player: player
+          player: player,
+          chat: chat
         })
       }
     })
+  }
 
-
-
+  function sendChat(message, color, sender){
+    var chatMessage =  {
+      message: message,
+      color: color,
+      sender: sender,
+      date: Date.now()
+    };
+    for (player of players) {
+      io.to(player.socketid).emit("chat", chatMessage);
+    }
+    console.log(sender + ": " + message);
+    chat.push(chatMessage);
+    while(chat.length > 50) chat.splice(chat.length-1, 1); // Make sure chat is no longer than 50 messages
   }
 
   function tick() {
@@ -123,6 +143,8 @@ var server = app.listen(port, function () {
   function disconnectPlayer(socketid) {
     for (let i = 0; i < players.length; i++) {
       if (players[i].socketid === socketid) {
+
+        sendChat(players[i].username + " " + leftMessages[Math.floor(Math.random()*leftMessages.length)], "#f4d742", "Server");
         players.splice(i, 1);
         return;
       }
@@ -132,8 +154,6 @@ var server = app.listen(port, function () {
 
 
   io.on("connection", (socket) => {
-
-    console.log("User connected");
 
     function getPlayer() {
       for (p of players)
@@ -152,6 +172,14 @@ var server = app.listen(port, function () {
 
     socket.on("disconnect", () => {
       disconnectPlayer(socket.id);
+    })
+
+    socket.on("chat", message => {
+      var player = getPlayer();
+      if(player == undefined) return;
+      if(message.length > 100) return;
+      if(message.trim().length == 0) return;
+      sendChat(message, "grey", player.username)
     })
 
     // Sign up

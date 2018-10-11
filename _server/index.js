@@ -3,8 +3,8 @@
 */
 
 /* Choose a port */
-var port = 45599;
-var ticks = 20; // Ticks per second
+var port = 5234;
+var ticks = 30; // Ticks per second
 /**
  *  Import node modules
  *  - Socket, socket io - for multiplayer
@@ -25,7 +25,7 @@ var app = express();
 var con = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "",
+  password: "nicke",
   database: "stugan"
 });
 
@@ -97,11 +97,7 @@ var server = app.listen(port, function () {
 
   }
 
-  var totalTicks = 0;
   function tick() {
-
-    totalTicks++;
-    if(totalTicks % (ticks*1) == 0) console.log(totalTicks)
 
     /* Gather data for from all players */
     clientPlayerData = new Array();
@@ -137,6 +133,8 @@ var server = app.listen(port, function () {
 
   io.on("connection", (socket) => {
 
+    console.log("User connected");
+
     function getPlayer() {
       for (p of players)
         if (p.socketid == socket.id) return p
@@ -158,7 +156,6 @@ var server = app.listen(port, function () {
 
     // Sign up
     socket.on("sign_up", pack => {
-
       var err = "";
 
       if (pack.password.length < 5) err = "Password must be at least 5 characters long";
@@ -176,11 +173,13 @@ var server = app.listen(port, function () {
         if (err === "") {
           // If there are no errors, create account
           try {
-            con.query("INSERT INTO `users`(`username`, `password`) VALUES (" + sanitize.escape(pack.username) + ", " + sanitize.escape(pack.password) + ")", (error, result) => {
+            con.query("INSERT INTO `users`(`username`, `password`, `inventory`, `outfit`) VALUES (" + sanitize.escape(pack.username) + ", " + sanitize.escape(pack.password) + ", '[]', '{}')", (error, result) => {
               if (!error) {
                 console.log("Created account for: " + pack.username);
                 socket.emit("successful_account_creation", true);
                 socket.emit("token", get_user_key(pack.username, pack.password));
+              } else {
+                console.log("Opsiee!", error);
               }
             })
           } catch (e) {

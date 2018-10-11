@@ -9,7 +9,7 @@ function initLeveleditor(){
     editorOpen = !editorOpen;
     var buttonString = "<br>";
     for(tile of tiles){
-        buttonString += "<a href='javascript:selectTexture(" + JSON.stringify(tile) + ")'> <img height='50' class='tile' src='textures/" + tile + "'> </a>"
+        buttonString += "<a href='javascript:selectTexture(" + JSON.stringify(tile) + ")'> <img title='" + tile + "' height='50' class='tile' src='textures/" + tile + "'> </a>"
     }
     if(editorOpen){
         document.getElementById("editor-textures").innerHTML = '<button onclick="toggleSnap()">Toggle snap</button>  <button onclick="placeTile()">Place tile</button> <button onclick="exportMap()">Export map</button> <span id="textures-insert"></span>';
@@ -39,4 +39,14 @@ function placeTile(){
         "sprite": selectedTexture,
         "scale": 6
     })
+}
+
+function allItems(){
+
+    itemString = "";
+    for(item of items){
+        if(item == null) continue;
+        itemString+= "<br><img src='textures/" + item.texture + "' height='50'> Name: " + item.name + " id: " + item.id;
+    }
+    document.getElementById("all-items").innerHTML = itemString;
 }

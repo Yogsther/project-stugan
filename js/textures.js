@@ -19,12 +19,40 @@ var textures = [
     "ui/inventory_closed.png",
     "ui/inventory_open.png",
     "ui/ui_bar.png",
-    "ui/inventory.png"
+    "ui/inventory.png",
+    "items/beards/ginger_beard.png",
+    "items/beards/ginger_beard_flipped.png",
+    "items/beards/grey_beard.png",
+    "items/beards/grey_beard_flipped.png",
+    "items/hairs/ginger_braid.png",
+    "items/hairs/ginger_braid_flipped.png",
+    "items/headwear/helmet.png",
+    "items/headwear/helmet_flipped.png",
+    "items/headwear/leather.png",
+    "items/headwear/leather_flipped.png",
+    "bodies/player_body_black.png",
+    "bodies/player_body_black_flipped.png",
+    "bodies/player_body_white.png",
+    "bodies/player_body_white_flipped.png"
 ];
 
+
+
+
 var tiles = [
-    "tiles/stone_ground.png",
-    "tiles/grass.png"
+    "tiles/island_l.png",
+    "tiles/island_t.png",
+    "tiles/water_island_b.png",
+    "tiles/island_bl.png",
+    "tiles/island_m.png",
+    "tiles/island_tr.png",
+    "tiles/water_island_br.png",
+    "tiles/island_b.png",
+    "tiles/island_r.png",
+    "tiles/water_island_m.png",
+    "tiles/island_br.png",
+    "tiles/island_tl.png",
+    "tiles/water_island_bl.png"
 ]
 
 textures.forEach(texture => importTexture(texture));

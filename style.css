@@ -8,6 +8,10 @@
           user-select: none;
 }
 
+img{
+  image-rendering: pixelated;
+}
+
 body{
   background: #111;
   color: white;

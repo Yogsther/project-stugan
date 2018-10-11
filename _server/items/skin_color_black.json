@@ -1,0 +1,6 @@
+{
+    "name": "Black skin color",
+    "id": 11,
+    "type": "body",
+    "texture": "bodies/player_body_black.png"
+}

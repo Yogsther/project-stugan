@@ -1,0 +1,6 @@
+{
+    "name": "White skin color",
+    "id": 10,
+    "type": "body",
+    "texture": "bodies/player_body_white.png"
+}

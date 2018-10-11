@@ -1,10 +1,11 @@
-var socket = io.connect("localhost:45599");
+var socket = io.connect("172.20.1.85:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false; // Allow for upscaling
 
 var players; // All players in the game
+
 var player; // You
 var map;
 var items;
@@ -29,13 +30,14 @@ var keysDown = []; // Current keys down
 var joined = false;
 
 
-
 // Updated on join
 socket.on("game", package => {
     items = package.items;
     map = package.map;
     player = package.player;
 })
+
+socket.on("re", () => {console.log("got it")})
 
 // Updated each tick
 socket.on("tick", package => {
@@ -56,7 +58,18 @@ socket.on("tick", package => {
             y: 0
         }; // Reset local pos
     }
+
     players = package.players;
+
+    function sortByHeight(a,b) {
+        if (a.position.y < b.position.y)
+          return -1;
+        if (a.position.y > b.position.y)
+          return 1;
+        return 0;
+      }
+      
+      players.sort(sortByHeight);
 })
 
 // Main loop, render and logic
@@ -73,7 +86,7 @@ function heartbeat() {
 }
 
 function render() {
-    ctx.fillStyle = "black";
+    ctx.fillStyle = "#165f9e";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     renderMap();
     renderPlayers(); // Draw players
@@ -83,10 +96,9 @@ function render() {
 
 function renderPlayers() {
     // Draw players
-    for (p of players) {
-        // Draw own player with localMove
+    for (p of players) {        // Draw own player with localMove
         if (p.username == player.username) {
-            drawPlayer(p, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped)
+            drawPlayer(player, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped)
             // Update private player position
             player.position.x = p.position.x + localMove.x + localPos.x;
             player.position.y = p.position.y + localMove.y + localPos.y;
@@ -96,23 +108,29 @@ function renderPlayers() {
     }
 }
 
-function drawPlayer(tobeplayer, x, y, flipped) {
+function drawPlayer(p, x, y, flipped) {
     /* In order of drawing */
     var outfit = {
-        skin: "bodies_1",
+        skin: 10,
         pants: 1,
         shirt: 3,
-        headwear: 2,
-        beard: 4
+        headwear: 8,
+        hair: 0,
+        beard: 6
     }
 
-    /* Draw body */
-    draw(outfit.skin, x, y, 5, flipped)
     /* Draw cosmetic items */
+    drawItem(outfit.skin);
     drawItem(outfit.pants);
     drawItem(outfit.shirt);
+    drawItem(outfit.hair);
     drawItem(outfit.headwear);
     drawItem(outfit.beard);
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.font = "20px Roboto";
+    ctx.fillText(p.username, p.position.x - camera.x + (t("bodies_1").width/2)*5, p.position.y - camera.y - 10);
 
     function drawItem(item) {
         if (item !== undefined && item !== "" && item !== 0) draw(items[item].texture, x, y, 5, flipped)
@@ -145,23 +163,12 @@ function renderUI() {
         draw(selectedTexture, editorPosition.x, editorPosition.y, 6);
     }
 
-    // Draw UI Bar, bottom right corner, 20px padding
-    draw("ui_ui_bar", canvas.width - (t("ui_ui_bar").width*10) - 20, canvas.height - 20 - t("ui_ui_bar").height*10, 10, false, true);
-    /* Draw chest */
-    var chestSprite = "ui_inventory_closed";
-    if(inventoryOpen) chestSprite = "ui_inventory_open";
-    draw(chestSprite, 645, 405, 10, false, true);
-
-    // Inventory
-    if(inventoryOpen){
-        draw("ui_inventory", 50, 50, 10, false, true);
-    }
-
-
-    ctx.fillStyle = "white";
     ctx.font = "20px Roboto";
     ctx.textAlign = "left";
-    ctx.fillText("x: " + mousePos.x + " y: " + mousePos.y, 20, canvas.height-20);
+    ctx.fillText("x: " + player.position.x + " y: " + player.position.y, 20, canvas.height-20);
+
+    //ctx.textAlign = "right";
+    //ctx.fillText("Playing as: " + player.username, canvas.width-20, canvas.height-20);
 
     // Render Context menu
     if(ctxMenuOpen){
@@ -182,39 +189,12 @@ canvas.addEventListener("mousemove", e => {
     mousePos = {x: x, y: y};
 })
 
-var onclickEvents = [{
+var onclickEvents = [/*{
     top: {x: 659, y: 418},
     bottom: {x: 735, y: 472},
     call: toggleInventory
-}] 
+}*/] 
 
-var inventoryOpen = false;
-function toggleInventory(){
-    inventoryOpen = !inventoryOpen;
-    /* inventoryEvents = [];
-
-    x = 92;
-    y = 91;
-
-    for(let i = 0; i < 12; i++){
-       
-
-        inventoryEvents.push({
-            top: {x: x + (i%3) * 78, y: y},
-            bottom: {x: x+69 + (i%3) * 78, y: y+69},
-            call: () => {pickInventory(JSON.stringify(i))}
-        })
-
-        if(i%3 == 0 && i !== 0){
-            y+=79;
-        }
-    } */
-
-}
-
-function pickInventory(index){
-    console.log(index);
-}
 
 var ctxMenuLocation = {x: 0, y: 0}
 var ctxMenuOpen = false;
@@ -267,6 +247,7 @@ function keyDown(key) {
 
 function move(x, y) {
     var speed = 5;
+    if(keyDown(16)) speed /= 3;
     if (x > 0) player.flipped = true;
     if (x < 0) player.flipped = false;
     localMove.x += x * speed;
@@ -274,10 +255,10 @@ function move(x, y) {
 }
 
 function logic() {
-    if (keyDown(87)) move(0, -1);
-    if (keyDown(83)) move(0, 1);
-    if (keyDown(65)) move(-1, 0);
-    if (keyDown(68)) move(1, 0);
+    if (keyDown(87) || keyDown(38)) move(0, -1);
+    if (keyDown(83) || keyDown(40)) move(0, 1);
+    if (keyDown(65) || keyDown(37)) move(-1, 0);
+    if (keyDown(68) || keyDown(39)) move(1, 0);
 
     try {
         camera.x = (player.position.x - (canvas.width / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;

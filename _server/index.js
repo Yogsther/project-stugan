@@ -25,7 +25,7 @@ var app = express();
 var con = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "",
+  password: "nicke",
   database: "stugan"
 });
 
@@ -66,8 +66,8 @@ var server = app.listen(port, function () {
     /* Make sure user is not already logged in */
     for (player of players)
       if (player.username == username) return;
-    
-    sendChat(username + " " + joinedMessages[Math.floor(Math.random()*joinedMessages.length)], "#f4d742", "Server");
+
+    sendChat(username + " " + joinedMessages[Math.floor(Math.random() * joinedMessages.length)], "#f4d742", "Server");
 
     var player = {
       inventory: [],
@@ -102,8 +102,8 @@ var server = app.listen(port, function () {
     })
   }
 
-  function sendChat(message, color, sender){
-    var chatMessage =  {
+  function sendChat(message, color, sender) {
+    var chatMessage = {
       message: message,
       color: color,
       sender: sender,
@@ -114,7 +114,7 @@ var server = app.listen(port, function () {
     }
     console.log(sender + ": " + message);
     chat.push(chatMessage);
-    while(chat.length > 50) chat.splice(chat.length-1, 1); // Make sure chat is no longer than 50 messages
+    while (chat.length > 50) chat.splice(chat.length - 1, 1); // Make sure chat is no longer than 50 messages
   }
 
   function tick() {
@@ -144,7 +144,7 @@ var server = app.listen(port, function () {
     for (let i = 0; i < players.length; i++) {
       if (players[i].socketid === socketid) {
 
-        sendChat(players[i].username + " " + leftMessages[Math.floor(Math.random()*leftMessages.length)], "#f4d742", "Server");
+        sendChat(players[i].username + " " + leftMessages[Math.floor(Math.random() * leftMessages.length)], "#f4d742", "Server");
         players.splice(i, 1);
         return;
       }
@@ -176,9 +176,9 @@ var server = app.listen(port, function () {
 
     socket.on("chat", message => {
       var player = getPlayer();
-      if(player == undefined) return;
-      if(message.length > 100) return;
-      if(message.trim().length == 0) return;
+      if (player == undefined) return;
+      if (message.length > 100) return;
+      if (message.trim().length == 0) return;
       sendChat(message, "grey", player.username)
     })
 
@@ -257,7 +257,7 @@ var server = app.listen(port, function () {
 
 
 
-
+    socket.on("give", item => give(getPlayer().username, item))
 
     /* END OF SOCKET */
   });
@@ -279,8 +279,23 @@ function loadItemsLibary() {
   console.log("Loaded " + jsons.length + " items.");
 }
 
-function createItem(id, ownerId) {
-  //INSERT INTO `items` (`id`, `owner_id`, `enchantment`) VALUES ('0', '0', '0');
+function give(username, itemID, amount) {
+  if(amount === undefined) amount = 1;
+  con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+    if (!error) {
+      if(result.length < 1) return;
+      player = result[0]
+      inventory = JSON.parse(player.inventory);
+      console.log("Parsed inventory:", inventory);
+      inventory.push(itemID);
+      console.log("Pushed item", inventory);
+      con.query("UPDATE `users` SET inventory = " + JSON.stringify(inventory) + " WHERE upper(username) = " + sanitize.escape(username), (error, result) => {
+        if (!error) {
+          console.log("Updated inventory");
+        }
+      })
+    } else throw error;
+  })
 }
 
 

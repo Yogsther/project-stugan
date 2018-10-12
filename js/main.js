@@ -1,4 +1,4 @@
-var socket = io.connect("localhost:5234");
+var socket = io.connect("http://172.20.1.85:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -36,6 +36,7 @@ socket.on("game", package => {
     map = package.map;
     player = package.player;
     for(pack of package.chat) addChatMessage(pack);
+    loadInventory();
 })
 
 // Updated each tick
@@ -335,4 +336,15 @@ function addChatMessage(pack){
         temp.textContent = str;
         return temp.innerHTML;
     };
+}
+
+// INVENTORY
+
+function loadInventory(){
+    invString = "";
+    for(i of player.inventory){
+        item = items[i];
+        invString += '<div class="inventory-slot" title="' + item.name + '"> <img src="textures/' + item.texture + '" class="item-slot-image" alt=""> </div>'
+    }
+    document.getElementById("inventory-window").innerHTML = invString;
 }

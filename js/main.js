@@ -1,4 +1,4 @@
-var socket = io.connect("http://172.20.1.85:5234");
+var socket = io.connect("localhost:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -36,6 +36,12 @@ socket.on("game", package => {
     map = package.map;
     player = package.player;
     for(pack of package.chat) addChatMessage(pack);
+    loadInventory();
+})
+
+socket.on("update", package => {
+    player = package;
+    console.log("Update")
     loadInventory();
 })
 
@@ -98,29 +104,31 @@ function renderPlayers() {
     // Draw players
     for (p of players) {        // Draw own player with localMove
         if (p.username == player.username) {
-            drawPlayer(player, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped)
+            drawPlayer(player, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped, p.outfit)
             // Update private player position
             player.position.x = p.position.x + localMove.x + localPos.x;
             player.position.y = p.position.y + localMove.y + localPos.y;
         } else {
-            drawPlayer(p, p.position.x, p.position.y, p.flipped);
+            drawPlayer(p, p.position.x, p.position.y, p.flipped, p.outfit);
         }
     }
 }
 
-function drawPlayer(p, x, y, flipped) {
+function drawPlayer(p, x, y, flipped, outfit) {
     /* In order of drawing */
-    var outfit = {
+    /* var outfit = {
         skin: 10,
         pants: 1,
         shirt: 3,
         headwear: 8,
         hair: 0,
         beard: 6
-    }
+    } */
+
+    /* outfit = p.outfit; */
 
     /* Draw cosmetic items */
-    drawItem(outfit.skin);
+    drawItem(outfit.body);
     drawItem(outfit.pants);
     drawItem(outfit.shirt);
     drawItem(outfit.hair);
@@ -233,7 +241,15 @@ canvas.addEventListener("click", e => {
 
 document.addEventListener("keydown", e => {
     keysDown[e.keyCode] = true;
-    if(e.code == "Enter") document.getElementById("chat-input").focus();
+    if(e.keyCode == 71){
+        var username = prompt("Username to who you will give to", player.username);
+        var itemID = prompt("Item ID", 1);
+        socket.emit("give", {
+            username: username,
+            id: itemID
+        })
+    }
+    if(e.key == "Enter") document.getElementById("chat-input").focus();
 })
 
 document.addEventListener("keyup", e => {
@@ -340,11 +356,16 @@ function addChatMessage(pack){
 
 // INVENTORY
 
+
 function loadInventory(){
     invString = "";
     for(i of player.inventory){
         item = items[i];
-        invString += '<div class="inventory-slot" title="' + item.name + '"> <img src="textures/' + item.texture + '" class="item-slot-image" alt=""> </div>'
+        invString += '<div onclick="equip(' + item.id + ')" class="inventory-slot" title="' + item.name + '"> <img src="textures/misc/dark.png" class="item-background"> <img src="textures/' + item.texture + '" class="item-slot-image" alt=""> </div>'
     }
     document.getElementById("inventory-window").innerHTML = invString;
+}
+
+function equip(id){
+    socket.emit("equip", id);
 }

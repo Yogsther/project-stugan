@@ -25,7 +25,7 @@ var app = express();
 var con = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "nicke",
+  password: "",
   database: "stugan"
 });
 
@@ -46,14 +46,16 @@ var joinedMessages = ["appeared out of nowhere!", "jumped in!", "hopped in!", "j
 var leftMessages = ["is no longer with us.", "has left us.", "commited.", "went somewhere else.", "left the game.", "yeeeted."]
 
 
-loadItemsLibary(); // Read all JSON's with item data.
 
 var server = app.listen(port, function () {
 
   console.log("Project Stugan | Listening to requests on port " + port + ", at " + ticks + " ticks.");
-
+  loadItemsLibary(); // Read all JSON's with item data.
   // Socket setup
   var io = socket(server);
+
+
+  
 
   // Start tick, 20 ticks/s
   setInterval(() => tick(), 1000 / ticks);
@@ -65,7 +67,7 @@ var server = app.listen(port, function () {
   function loginPlayer(username, socketid) {
     /* Make sure user is not already logged in */
     for (player of players)
-      if (player.username == username) return;
+      if (player.username == username) disconnectPlayer(player.socketid);
 
     sendChat(username + " " + joinedMessages[Math.floor(Math.random() * joinedMessages.length)], "#f4d742", "Server");
 
@@ -143,7 +145,6 @@ var server = app.listen(port, function () {
   function disconnectPlayer(socketid) {
     for (let i = 0; i < players.length; i++) {
       if (players[i].socketid === socketid) {
-
         sendChat(players[i].username + " " + leftMessages[Math.floor(Math.random() * leftMessages.length)], "#f4d742", "Server");
         players.splice(i, 1);
         return;
@@ -201,7 +202,7 @@ var server = app.listen(port, function () {
         if (err === "") {
           // If there are no errors, create account
           try {
-            con.query("INSERT INTO `users`(`username`, `password`, `inventory`, `outfit`) VALUES (" + sanitize.escape(pack.username) + ", " + sanitize.escape(pack.password) + ", '[]', '{}')", (error, result) => {
+            con.query("INSERT INTO `users`(`username`, `password`, `inventory`, `outfit`) VALUES (" + sanitize.escape(pack.username) + ", " + sanitize.escape(pack.password) + ", '[]', '" + '{"body":10}' + "')", (error, result) => {
               if (!error) {
                 console.log("Created account for: " + pack.username);
                 socket.emit("successful_account_creation", true);
@@ -257,18 +258,136 @@ var server = app.listen(port, function () {
 
 
 
-    socket.on("give", item => give(getPlayer().username, item))
+    socket.on("give", pack => give(pack.username, pack.id));
+    socket.on("equip", id => {
+      try{
+        equip(getPlayer().username, id)
+      } catch(e){}
+    });
+
+    function getPlayerSocket(username) {
+      for (player of players)
+        if (player.username.toLowerCase() == username.toLowerCase()) return player.socketid;
+      return false;
+    }
+
+    function getPlayerFromSocket(socket) {
+      for (player of players)
+        if (player.socketid == socket) return player;
+      return false;
+    }
+
+
+
+
+    function get_user_key(username, password) {
+      return username.toLowerCase() + "_" + password;
+    }
+
+    
+    function give(username, itemID, amount) {
+      if (amount === undefined) amount = 1;
+      con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+        if (!error) {
+          if (result.length < 1) return;
+          inventory = result[0].inventory;
+          if (inventory == "") inventory = [];
+          else inventory = JSON.parse(inventory);
+
+          inventory.push(itemID);
+          var player = getPlayerFromSocket(socket.id);
+          player.inventory = inventory;
+        
+          con.query("UPDATE users SET inventory = '" + JSON.stringify(inventory) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+            if (!error) {
+              io.to(getPlayerSocket(username)).emit("update", player);
+            } else throw error;
+          })
+        } else throw error;
+      })
+    }
+
+
+    function equip(username, itemID) {
+      var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt"]
+      if (wearableTypes.indexOf(items[itemID].type) != -1) {
+        con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+          if (!error) {
+            if (result.length < 1) return;
+            outfit = result[0].outfit;
+            if (outfit == "") outfit = {};
+            else outfit = JSON.parse(outfit);
+
+            if (JSON.parse(result[0].inventory).indexOf(itemID.toString()) != -1) outfit[items[itemID].type] = itemID;
+            else {
+              console.log("WARN: Does not own item!", JSON.parse(result[0].inventory));
+              return;
+            }
+            con.query("UPDATE users SET outfit = '" + JSON.stringify(outfit) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+              if (!error) {
+                  for(player of players){
+                    if(player.username == username){
+                      player.outfit = outfit;
+                    }
+                  }
+              } else throw error;
+            })
+          } else throw error;
+        })
+      } else {
+        console.log("WARN: not a wearable item!");
+      }
+    }
+
+
+
+
+
+
+    /**
+     * Explicit words censored for users and warns admins.
+     * Some, even more explicit words are not event accepted by the server and are not indexed here.
+     */
+
+    // Base List of Bad Words in English
+    let bad_words = ["asshole", "bastard", "bitch", "boong", "cock", "cocksucker", "cunt", "dick", "fag", "faggot", "fuck", "gook", "motherfucker", "piss", "pussy", "slut", "tits", "nigga"]
+
+    function containes_bad_word(comment) {
+      for (badWord of bad_words) {
+        if (comment.toLowerCase().indexOf(badWord) != -1) return true;
+      }
+      return false;
+    }
+
+    function censor_comment(comment) {
+      for (badWord of bad_words) {
+        var breakPoint = 0;
+        while (comment.toLowerCase().indexOf(badWord) != -1) {
+          breakPoint++;
+          if (breakPoint > 50) {
+            console.warn("There was a problem with the censor filter, please report this bug via 'Contact me', Thanks!");
+            break;
+          }
+          var index = comment.toLowerCase().indexOf(badWord);
+          var censorString = new String();
+          for (let i = 1; i < badWord.length; i++) censorString += "*";
+          comment = comment.substr(0, index + 1) + censorString + comment.substr(index + badWord.length, comment.length);
+        }
+      }
+      return comment;
+    }
+
+
+
+
+
+
+
 
     /* END OF SOCKET */
   });
 });
 
-
-
-
-function get_user_key(username, password) {
-  return username.toLowerCase() + "_" + password;
-}
 
 function loadItemsLibary() {
   var jsons = fs.readdirSync("items");
@@ -277,88 +396,4 @@ function loadItemsLibary() {
     items[item.id] = item;
   }
   console.log("Loaded " + jsons.length + " items.");
-}
-
-function give(username, itemID, amount) {
-  if(amount === undefined) amount = 1;
-  con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
-    if (!error) {
-      if(result.length < 1) return;
-      player = result[0]
-      inventory = JSON.parse(player.inventory);
-      console.log("Parsed inventory:", inventory);
-      inventory.push(itemID);
-      console.log("Pushed item", inventory);
-      con.query("UPDATE `users` SET inventory = " + JSON.stringify(inventory) + " WHERE upper(username) = " + sanitize.escape(username), (error, result) => {
-        if (!error) {
-          console.log("Updated inventory");
-        }
-      })
-    } else throw error;
-  })
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Explicit words censored for users and warns admins.
- * Some, even more explicit words are not event accepted by the server and are not indexed here.
- */
-
-// Base List of Bad Words in English
-let bad_words = ["asshole", "bastard", "bitch", "boong", "cock", "cocksucker", "cunt", "dick", "fag", "faggot", "fuck", "gook", "motherfucker", "piss", "pussy", "slut", "tits", "nigga"]
-
-function containes_bad_word(comment) {
-  for (badWord of bad_words) {
-    if (comment.toLowerCase().indexOf(badWord) != -1) return true;
-  }
-  return false;
-}
-
-function censor_comment(comment) {
-  for (badWord of bad_words) {
-    var breakPoint = 0;
-    while (comment.toLowerCase().indexOf(badWord) != -1) {
-      breakPoint++;
-      if (breakPoint > 50) {
-        console.warn("There was a problem with the censor filter, please report this bug via 'Contact me', Thanks!");
-        break;
-      }
-      var index = comment.toLowerCase().indexOf(badWord);
-      var censorString = new String();
-      for (let i = 1; i < badWord.length; i++) censorString += "*";
-      comment = comment.substr(0, index + 1) + censorString + comment.substr(index + badWord.length, comment.length);
-    }
-  }
-  return comment;
 }

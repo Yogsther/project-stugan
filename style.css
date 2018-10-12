@@ -14,6 +14,7 @@
 
 *{
   image-rendering: pixelated;
+  -webkit-user-drag: none;
 }
 
 body{
@@ -134,15 +135,19 @@ a:active{
   top: 10px;
   right: 10px;
   position: absolute;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .inventory-slot{
   height: 75px;
   width: 75px;
   margin: 5px;
+  display: inline-block;
   position: relative;
   background: url("textures/ui/common_slot.png");
   background-size: 75px;
+  cursor: pointer;
 }
 
 .item-slot-image{
@@ -151,7 +156,17 @@ a:active{
   margin: 5px;
   margin: 0 auto;
   display: block;
-  position: relative;
-  top: 20px;
+  position: absolute;
+  top: 5px;
+}
+
+.item-background{
+  height: 75px;
+  width: 75px;
+  margin: 5px;
+  margin: 0 auto;
+  display: block;
+  position: absolute;
+  top: 5px;
 }
 

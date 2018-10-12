@@ -5,10 +5,10 @@ var editorOpen = false;
 var editorPosition = {x: 0, y: 0};
 
 function initLeveleditor(){
-    if(selectedTexture == "") selectedTexture = tiles[0];
+    if(selectedTexture == "") selectedTexture = textures[0];
     editorOpen = !editorOpen;
     var buttonString = "<br>";
-    for(tile of tiles){
+    for(tile of textures){
         buttonString += "<a href='javascript:selectTexture(" + JSON.stringify(tile) + ")'> <img title='" + tile + "' height='50' class='tile' src='textures/" + tile + "'> </a>"
     }
     if(editorOpen){

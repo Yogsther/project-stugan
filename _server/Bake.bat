@@ -1,0 +1,2 @@
+node bake.js
+pause

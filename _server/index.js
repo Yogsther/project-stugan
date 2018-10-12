@@ -25,7 +25,7 @@ var app = express();
 var con = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-/*   password: "", */
+  /*   password: "", */
   database: "stugan"
 });
 
@@ -53,9 +53,6 @@ var server = app.listen(port, function () {
   loadItemsLibary(); // Read all JSON's with item data.
   // Socket setup
   var io = socket(server);
-
-
-  
 
   // Start tick, 20 ticks/s
   setInterval(() => tick(), 1000 / ticks);

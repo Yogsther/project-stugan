@@ -76,7 +76,8 @@ var server = app.listen(port, function () {
       walking: false,
       flipped: false,
       username: username,
-      socketid: socketid
+      socketid: socketid,
+      blinking: 0
     }
 
     con.query("SELECT * FROM `users` WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
@@ -121,13 +122,21 @@ var server = app.listen(port, function () {
     /* Gather data for from all players */
     clientPlayerData = new Array();
     for (player of players) {
+
+      if(Math.floor(Math.random() * (ticks * 4)) == 0 ){
+        player.blinking = 5;
+      }
+
       clientPlayerData.push({
         position: player.position,
         username: player.username,
         walking: player.walking,
         flipped: player.flipped,
-        outfit: player.outfit
+        outfit: player.outfit,
+        closedEyes: player.blinking > 0
       })
+
+      if(player.blinking > 0 ) player.blinking--;
     }
 
     /* Send that data to all players */
@@ -199,7 +208,7 @@ var server = app.listen(port, function () {
         if (err === "") {
           // If there are no errors, create account
           try {
-            con.query("INSERT INTO `users`(`username`, `password`, `inventory`, `outfit`) VALUES (" + sanitize.escape(pack.username) + ", " + sanitize.escape(pack.password) + ", '[]', '" + '{"body":10}' + "')", (error, result) => {
+            con.query("INSERT INTO `users`(`username`, `password`, `inventory`, `outfit`) VALUES (" + sanitize.escape(pack.username) + ", " + sanitize.escape(pack.password) + ", '[10, 32]', '" + '{"body":10, "eyes":32}' + "')", (error, result) => {
               if (!error) {
                 console.log("Created account for: " + pack.username);
                 socket.emit("successful_account_creation", true);
@@ -217,7 +226,6 @@ var server = app.listen(port, function () {
           socket.emit("err", err);
         }
       })
-
     })
 
 
@@ -306,7 +314,7 @@ var server = app.listen(port, function () {
 
 
     function equip(username, itemID) {
-      var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt"]
+      var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt", "eyes"]
       if (wearableTypes.indexOf(items[itemID].type) != -1) {
         con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
           if (!error) {

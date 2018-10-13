@@ -1,5 +1,5 @@
-/* var socket = io.connect("nut.livfor.it:5234"); */
-var socket = io.connect("localhost:5234");
+var socket = io.connect("nut.livfor.it:5234");
+//var socket = io.connect("localhost:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -108,7 +108,7 @@ function renderPlayers() {
     // Draw players
     for (p of players) {        // Draw own player with localMove
         if (p.username == player.username) {
-            drawPlayer(player, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped, p.outfit)
+            drawPlayer(p, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped)
             // Update private player position
             player.position.x = p.position.x + localMove.x + localPos.x;
             player.position.y = p.position.y + localMove.y + localPos.y;
@@ -118,7 +118,7 @@ function renderPlayers() {
     }
 }
 
-function drawPlayer(p, x, y, flipped, outfit) {
+function drawPlayer(p, x, y, flipped) {
     /* In order of drawing */
     /* var outfit = {
         skin: 10,
@@ -131,8 +131,11 @@ function drawPlayer(p, x, y, flipped, outfit) {
 
     /* outfit = p.outfit; */
 
+    outfit = p.outfit;
+
     /* Draw cosmetic items */
     drawItem(outfit.body);
+    if(!p.closedEyes)drawItem(outfit.eyes);
     drawItem(outfit.pants);
     drawItem(outfit.shirt);
     drawItem(outfit.hair);
@@ -142,7 +145,7 @@ function drawPlayer(p, x, y, flipped, outfit) {
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.font = "20px Roboto";
-    ctx.fillText(p.username, p.position.x - camera.x + (t("bodies_1").width/2)*5, p.position.y - camera.y - 10);
+    ctx.fillText(p.username, x - camera.x + (t("bodies_1").width/2)*5, y - camera.y - 10);
 
     function drawItem(item) {
         item = items[item]; // Convert ID to actual item
@@ -210,6 +213,14 @@ function renderUI() {
 
     //ctx.textAlign = "right";
     //ctx.fillText("Playing as: " + player.username, canvas.width-20, canvas.height-20);
+
+    if(globalTick % 10 == 0){
+        // Update inventory every 10 frames
+        var elements = document.getElementsByClassName("animated");
+        for(el of elements){
+            el.src = "textures/"+items[el.id].texture[Math.round(globalTick/10) % items[el.id].texture.length]
+        }
+    }
 
     // Render Context menu
     if(ctxMenuOpen){
@@ -402,7 +413,7 @@ function loadInventory(){
 
         console.log(texture)
 
-        invString += '<div onclick="equip(' + item.id + ')" class="inventory-slot" title="' + item.name + '"> <img src="textures/misc/dark.png" class="item-background ' + animated + '"> <img src="textures/' + texture + '" class="item-slot-image" alt=""> </div>'
+        invString += '<div onclick="equip(' + item.id + ')" class="inventory-slot" title="' + item.name + '"> <img src="textures/misc/dark.png" class="item-background"> <img src="textures/' + texture + '" id="' + item.id + '" class="item-slot-image  ' + animated + '" alt=""> </div>'
     }
     document.getElementById("inventory-window").innerHTML = invString;
 }

@@ -1,4 +1,5 @@
-var socket = io.connect("nut.livfor.it:5234");
+/* var socket = io.connect("nut.livfor.it:5234"); */
+var socket = io.connect("localhost:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -28,6 +29,7 @@ var localPos = {
 
 var keysDown = []; // Current keys down
 var joined = false;
+var globalTick = 0;
 
 
 // Updated on join
@@ -80,6 +82,8 @@ socket.on("tick", package => {
 
 // Main loop, render and logic
 function heartbeat() {
+
+    globalTick++; // Increase global counter each frame
 
     logic();
 
@@ -141,7 +145,14 @@ function drawPlayer(p, x, y, flipped, outfit) {
     ctx.fillText(p.username, p.position.x - camera.x + (t("bodies_1").width/2)*5, p.position.y - camera.y - 10);
 
     function drawItem(item) {
-        if (item !== undefined && item !== "" && item !== 0) draw(items[item].texture, x, y, 5, flipped)
+        item = items[item]; // Convert ID to actual item
+        if (item !== undefined && item !== "" && item !== 0){
+            var texture;
+            if(item.texture.constructor == Array){ // If item is animated
+                texture = item.texture[Math.round(globalTick/10) % item.texture.length];
+            } else texture = item.texture;
+            draw(texture, x, y, 5, flipped)
+        }
     }
 }
 
@@ -156,6 +167,28 @@ function renderMap() {
     for (tile of map) {
         draw(tile.sprite, tile.x, tile.y, tile.scale, false, false);
     }
+}
+
+var fps = 0;
+var frames = 0;
+var lastCountedFPS = Date.now();
+var frameScoreCached = new Array();
+
+function getFPS(){
+    // This has to be called each frame to ensure the FPS is accurate.
+    if (Date.now() - lastCountedFPS > 50) {
+        frameScoreCached.push(frames); // Add new package
+        if (frameScoreCached.length > 20) frameScoreCached.splice(0, 1); // Remove first in order
+        var totalFrames = 0;
+        for (let i = 0; i < frameScoreCached.length; i++) {
+            totalFrames += frameScoreCached[i];
+        }
+        fps = (totalFrames / frameScoreCached.length) * 20
+        frames = 0;
+        lastCountedFPS = Date.now();
+    }
+    frames++;
+    return Math.round(fps);
 }
 
 function renderUI() {
@@ -173,7 +206,7 @@ function renderUI() {
 
     ctx.font = "20px Roboto";
     ctx.textAlign = "left";
-    ctx.fillText("x: " + player.position.x + " y: " + player.position.y, 20, canvas.height-20);
+    ctx.fillText("fps: " + getFPS(), 20, 30);
 
     //ctx.textAlign = "right";
     //ctx.fillText("Playing as: " + player.username, canvas.width-20, canvas.height-20);
@@ -183,8 +216,6 @@ function renderUI() {
         ctx.fillStyle = "red";
         ctx.fillRect(ctxMenuLocation.x, ctxMenuLocation.y, 150, 200);
     }
-
-
 }
 
 
@@ -361,7 +392,17 @@ function loadInventory(){
     invString = "";
     for(i of player.inventory){
         item = items[i];
-        invString += '<div onclick="equip(' + item.id + ')" class="inventory-slot" title="' + item.name + '"> <img src="textures/misc/dark.png" class="item-background"> <img src="textures/' + item.texture + '" class="item-slot-image" alt=""> </div>'
+        var animated = "";
+        var texture = "";
+
+        if(item.texture.constructor == Array){
+            animated = "animated";
+            texture = item.texture[0];
+        } else texture = item.texture;
+
+        console.log(texture)
+
+        invString += '<div onclick="equip(' + item.id + ')" class="inventory-slot" title="' + item.name + '"> <img src="textures/misc/dark.png" class="item-background ' + animated + '"> <img src="textures/' + texture + '" class="item-slot-image" alt=""> </div>'
     }
     document.getElementById("inventory-window").innerHTML = invString;
 }

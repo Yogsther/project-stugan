@@ -1,0 +1,6 @@
+{
+    "name": "Horn Box Hat",
+    "id": 31,
+    "type": "headwear",
+    "texture": ["items/headwear/hornbox_1.png", "items/headwear/hornbox_2.png", "items/headwear/hornbox_3.png"]
+}

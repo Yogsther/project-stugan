@@ -2,6 +2,7 @@ var fs = require("fs");
 var jimp = require('jimp');
 
 var textures = fs.readdirSync("textures");
+    textures.splice(textures.indexOf("list.js"), 1);
 var toBeFlipped = [];
 var allTextures = [];
 var list = [];
@@ -11,22 +12,29 @@ function run() {
     for (texture of textures) exploreDirectory("textures/" + texture);
 
     index = 0;
-    if(toBeFlipped.length > 0) flip(toBeFlipped[index]);
+    if (toBeFlipped.length > 0) flip(toBeFlipped[index]);
 
-    function flip(image){
+    function flip(image) {
         jimp.read(image, (err, img) => {
             if (err) throw err;
             var texture = image;
-            img.flip(true, false).write(texture.substr(0, texture.indexOf(".")) + "_flipped.png");
-            console.log("Flipped: " + texture);
+            try{
+                var ree = fs.readFileSync(texture.substr(0, texture.indexOf(".")) + "_flipped.png")
+            } catch(e) {
+                img.flip(true, false).write(texture.substr(0, texture.indexOf(".")) + "_flipped.png");
+                allTextures.push(texture.substr(0, texture.indexOf(".")) + "_flipped.png")
+                console.log("Flipped: " + texture);
+            }
+                
             index++;
-            if(index < toBeFlipped.length) flip(toBeFlipped[index]);
-                else {
-                    for(texture of allTextures){
-                        list.push(texture.substr(9, texture.length));
-                    }
-                    fs.writeFileSync("texture_list.json", JSON.stringify(list));
+            if (index < toBeFlipped.length) flip(toBeFlipped[index]);
+            else {
+                for (texture of allTextures) {
+                    list.push(texture.substr(9, texture.length));
                 }
+                fs.writeFileSync("textures/list.js", "const texture_list = " + JSON.stringify(list));
+                console.log("Done!");
+            }
         })
     }
 }
@@ -43,6 +51,3 @@ function exploreDirectory(directoryString) {
         }
     }
 }
-
-
-

@@ -9,10 +9,10 @@ function initLeveleditor(){
     editorOpen = !editorOpen;
     var buttonString = "<br>";
     for(tile of textures){
-        buttonString += "<a href='javascript:selectTexture(" + JSON.stringify(tile) + ")'> <img title='" + tile + "' height='50' class='tile' src='textures/" + tile + "'> </a>"
+        if(tile.indexOf("tiles") != -1)buttonString += "<a href='javascript:selectTexture(" + JSON.stringify(tile) + ")'> <img title='" + tile + "' height='50' class='tile' src='textures/" + tile + "'> </a>"
     }
     if(editorOpen){
-        document.getElementById("editor-textures").innerHTML = '<button onclick="toggleSnap()">Toggle snap</button>  <button onclick="placeTile()">Place tile</button> <button onclick="exportMap()">Export map</button> <span id="textures-insert"></span>';
+        document.getElementById("editor-textures").innerHTML = 'Collision <input type="checkbox" id="collision"> <button onclick="toggleSnap()">Toggle snap</button>  <button onclick="placeTile()">Place tile [P]</button> <button onclick="exportMap()">Export map</button> <span id="textures-insert"></span>';
         document.getElementById("textures-insert").innerHTML = buttonString;
     } else {
         document.getElementById("editor-textures").innerHTML = "";
@@ -37,7 +37,8 @@ function placeTile(){
         "x": editorPosition.x,
         "y": editorPosition.y,
         "sprite": selectedTexture,
-        "scale": 6
+        "scale": 6,
+        "collision": document.getElementById("collision").checked
     })
 }
 

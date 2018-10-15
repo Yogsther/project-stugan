@@ -146,14 +146,16 @@ function drawPlayer(p, x, y, flipped) {
     ctx.fillText(p.username, x - camera.x + (t("bodies_1").width / 2) * 5, y - camera.y - 10);
 
     function drawItem(item) {
-        item = items[item]; // Convert ID to actual item
-        if (item !== undefined && item !== "" && item !== 0) {
-            var texture;
-            if (item.texture.constructor == Array) { // If item is animated
-                texture = item.texture[Math.round(globalTick / 10) % item.texture.length];
-            } else texture = item.texture;
-            draw(texture, x, y, 5, flipped)
-        }
+        try{
+            if (item !== undefined && item !== "" && item !== 0) {
+                item = items[Number(item)]; // Convert ID to actual item
+                var texture;
+                if (item.texture.constructor == Array) { // If item is animated
+                    texture = item.texture[Math.round(globalTick / 10) % item.texture.length];
+                } else texture = item.texture;
+                draw(texture, x, y, 5, flipped)
+            }
+        } catch(e){}
     }
 }
 
@@ -217,7 +219,7 @@ function renderUI() {
         // Update inventory every 10 frames
         var elements = document.getElementsByClassName("animated");
         for (el of elements) {
-            el.src = "textures/" + items[el.id].texture[Math.round(globalTick / 10) % items[el.id].texture.length]
+            el.src = "textures/" + items[player.inventory[el.id]].texture[Math.round(globalTick / 10) % items[player.inventory[el.id]].texture.length]
         }
     }
 
@@ -253,17 +255,55 @@ var onclickEvents = [
 ]
 
 
-var ctxMenuLocation = {
-    x: 0,
-    y: 0
-}
+
 var ctxMenuOpen = false;
-canvas.addEventListener('contextmenu', e => {
+document.addEventListener('contextmenu', e => {
     e.preventDefault()
+    var changed = false;
     //ctxMenuOpen = true;
-    ctxMenuLocation.x = mousePos.x;
-    ctxMenuLocation.y = mousePos.y;
+
+    for(var el of e.path){
+        try{
+            if(el.classList.toString().indexOf("inventory-slot") != -1){
+                var index = el.id;
+                // User click on an item in their inventory
+                contextOptions = [{
+                    text: "Equip",
+                    action: () => {equip(index)}
+                },{
+                    text: "Unequip",
+                    action: () => {unequip(index)}
+                },{
+                    text: "Drop item",
+                    action: () => {dropItem(index)}
+                }]
+                changed = true;
+            }
+        } catch(e){}
+    }
+
+    if(!changed) contextOptions = [];
+
+    openContextMenu(e.pageX, e.pageY);
+    ctxMenuOpen = true;
 });
+
+contextOptions = []
+
+function openContextMenu(x, y){
+    // Build context menu and place it
+    contextMenuString = "";
+    for(i = 0; i < contextOptions.length; i++){
+        contextMenuString += '<div class="menu-option" onclick="context(' + i + ')">' + contextOptions[i].text + '</div>';
+    }
+    document.getElementById("context-menu").innerHTML = '<div id="ctx-menu" class="menu">' + contextMenuString + '</div>';
+    document.getElementById("ctx-menu").style.top = y+"px";
+    document.getElementById("ctx-menu").style.left = x+"px";
+}
+
+function context(index){
+    contextOptions[index].action()
+}
 
 
 canvas.addEventListener("click", e => {
@@ -290,6 +330,10 @@ canvas.addEventListener("click", e => {
     }
 
     ctxMenuOpen = false;
+})
+
+document.addEventListener("click", e => {
+    document.getElementById("context-menu").innerHTML = "";
 })
 
 
@@ -524,8 +568,8 @@ function addChatMessage(pack) {
 
 function loadInventory() {
     invString = "";
-    for (i of player.inventory) {
-        item = items[i];
+    for (var index = 0; index < player.inventory.length; index++) {
+        item = items[player.inventory[index]];
         var animated = "";
         var texture = "";
 
@@ -534,11 +578,18 @@ function loadInventory() {
             texture = item.texture[0];
         } else texture = item.texture;
 
-        invString += '<div onclick="equip(' + item.id + ')" class="inventory-slot" title="' + item.name + '"> <img src="textures/misc/dark.png" class="item-background"> <img src="textures/' + texture + '" id="' + item.id + '" class="item-slot-image  ' + animated + '" alt=""> </div>'
+        invString += '<div class="inventory-slot" title="' + item.name + '" id="' + index + '"> <img src="textures/misc/dark.png" class="item-background"> <img src="textures/' + texture + '" id="' + index + '" class="item-slot-image  ' + animated + '" alt=""> </div>'
     }
     document.getElementById("inventory-window").innerHTML = invString;
 }
 
-function equip(id) {
-    socket.emit("equip", id);
+function equip(index) {
+    socket.emit("equip", index);
+    console.log(index);
+}
+function unequip(index) {
+    socket.emit("unequip", index);
+}
+function dropItem(index) {
+    socket.emit("dropItem", index);
 }

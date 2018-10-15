@@ -1,6 +1,6 @@
-*{
+* {
   font-family: 'Roboto', sans-serif;
- 
+
 }
 
 ::-webkit-scrollbar {
@@ -12,23 +12,23 @@
   background-color: #3a3a3a;
 }
 
-*{
+* {
   image-rendering: pixelated;
   -webkit-user-drag: none;
 }
 
-body{
+body {
   background: #111;
   color: white;
 }
 
-#wrap{
-  width: 800px;
+#wrap {
+  width: 900px;
   margin: 0 auto;
   position: relative;
 }
 
-#canvas{
+#canvas {
   margin: 0 auto;
   display: block;
   position: relative;
@@ -37,50 +37,58 @@ body{
   background-image: url("textures/misc/splash.png");
   z-index: 10;
 
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Safari */
-   -khtml-user-select: none; /* Konqueror HTML */
-     -moz-user-select: none; /* Firefox */
-      -ms-user-select: none; /* Internet Explorer/Edge */
-          user-select: none;
+  -webkit-touch-callout: none;
+  /* iOS Safari */
+  -webkit-user-select: none;
+  /* Safari */
+  -khtml-user-select: none;
+  /* Konqueror HTML */
+  -moz-user-select: none;
+  /* Firefox */
+  -ms-user-select: none;
+  /* Internet Explorer/Edge */
+  user-select: none;
 }
 
-button, input{
+button,
+input {
   margin-top: 5px;
   position: relative;
 }
 
-button{
+button {
   cursor: pointer;
 }
 
-a{
+a {
   color: white;
   text-decoration: none;
 }
-a:visited{
+
+a:visited {
   color: white;
 }
-a:active{
+
+a:active {
   color: grey;
 }
 
 
-#editor-textures{
+#editor-textures {
   color: white !important;
   text-decoration: none;
 }
 
-.tile{
+.tile {
   margin-top: 10px;
   margin-right: 2px;
 }
 
-#old-layout{
+#old-layout {
   position: relative;
 }
 
-#bottom{
+#bottom {
   height: 300px;
   width: 900px;
   margin: 0 auto;
@@ -89,7 +97,7 @@ a:active{
   position: relative;
 }
 
-#chat-window{
+#chat-window {
   height: 240px;
   width: 435px;
   background: rgb(36, 36, 36);
@@ -100,7 +108,7 @@ a:active{
   overflow-y: auto;
 }
 
-#chat-input{
+#chat-input {
   height: 30px;
   width: 415px;
   bottom: 10px;
@@ -115,9 +123,11 @@ a:active{
   color: white;
 }
 
-#chat-input:focus {outline:0;}
+#chat-input:focus {
+  outline: 0;
+}
 
-.chat-message{
+.chat-message {
   position: relative;
   display: block;
   min-height: 5px;
@@ -128,7 +138,7 @@ a:active{
   background: rgb(20, 20, 20);
 }
 
-#inventory-window{
+#inventory-window {
   height: 280px;
   width: 435px;
   background: rgb(36, 36, 36);
@@ -139,7 +149,7 @@ a:active{
   overflow-y: auto;
 }
 
-.inventory-slot{
+.inventory-slot {
   height: 75px;
   width: 75px;
   margin: 5px;
@@ -150,7 +160,7 @@ a:active{
   cursor: pointer;
 }
 
-.item-slot-image{
+.item-slot-image {
   height: 75px;
   width: 75px;
   margin: 5px;
@@ -160,7 +170,7 @@ a:active{
   top: 5px;
 }
 
-.item-background{
+.item-background {
   height: 75px;
   width: 75px;
   margin: 5px;
@@ -170,3 +180,35 @@ a:active{
   top: 5px;
 }
 
+
+.menu{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background: rgb(56, 56, 56);
+  /* height: 100px; */
+  width: 150px;
+  z-index: 99999;
+  -webkit-touch-callout: none;
+  /* iOS Safari */
+  -webkit-user-select: none;
+  /* Safari */
+  -khtml-user-select: none;
+  /* Konqueror HTML */
+  -moz-user-select: none;
+  /* Firefox */
+  -ms-user-select: none;
+  /* Internet Explorer/Edge */
+  user-select: none;
+}
+
+.menu-option{
+  width: 94%;
+  padding: 3%;
+  background: rgb(37, 37, 37);
+  cursor: pointer;
+}
+
+.menu-option:hover{
+  background: rgb(0, 0, 0);
+}

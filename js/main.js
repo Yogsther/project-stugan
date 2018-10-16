@@ -1,5 +1,5 @@
-//var socket = io.connect("nut.livfor.it:5234");
-var socket = io.connect("localhost:5234");
+var socket = io.connect("nut.livfor.it:5234");
+//var socket = io.connect("localhost:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");

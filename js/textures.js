@@ -8,6 +8,8 @@ var textures = texture_list;
 textures.forEach(texture => importTexture(texture));
 
 function t(name) {
+    name = name.split("/").join("_");
+    if(name.indexOf(".") != -1)name = name.substr(0, name.indexOf("."));
     return textures[name];
 }
 

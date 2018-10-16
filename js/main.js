@@ -1,15 +1,15 @@
-var socket = io.connect("nut.livfor.it:5234");
-//var socket = io.connect("localhost:5234");
+//var socket = io.connect("nut.livfor.it:5234");
+var socket = io.connect("localhost:5234");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false; // Allow for upscaling
 
-var players; // All players in the game
-
-var player; // You
-var map;
-var items;
+var players = []; // All players in the game
+var player = {}; // You
+var map = [];
+var items = [];
+var droppedItems = [];
 
 var camera = {
     x: 0,
@@ -37,8 +37,10 @@ socket.on("game", package => {
     items = package.items;
     map = package.map;
     player = package.player;
+    droppedItems = package.droppedItems;
     for (pack of package.chat) addChatMessage(pack);
     loadInventory();
+    heartbeat();
 })
 
 socket.on("update", package => {
@@ -86,9 +88,9 @@ function heartbeat() {
 
     logic();
 
-    try {
+ /*    try { */
         render();
-    } catch (e) {}
+   /*  } catch (e) {} */
 
 
     requestAnimationFrame(heartbeat);
@@ -98,8 +100,21 @@ function render() {
     ctx.fillStyle = "#165f9e";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     renderMap();
+    renderDroppedItems();
     renderPlayers(); // Draw players
     renderUI();
+}
+
+function renderDroppedItems(){
+    if(!droppedItems) return;
+    for(itm of droppedItems){
+        var item = items[Number(itm.id)];
+        var texture;
+        if (item.texture.constructor == Array) { // If item is animated
+            texture = item.texture[Math.round(globalTick / 10) % item.texture.length];
+        } else texture = item.texture;
+        draw(texture, itm.x, itm.y + (Math.sin((globalTick + itm.id*5)/5)*5), 3, false)
+    }
 }
 
 function renderPlayers() {
@@ -133,6 +148,7 @@ function drawPlayer(p, x, y, flipped) {
 
     /* Draw cosmetic items */
     drawItem(outfit.body);
+    drawItem(outfit.makeup);
     if (!p.closedEyes) drawItem(outfit.eyes);
     drawItem(outfit.pants);
     drawItem(outfit.shirt);
@@ -146,7 +162,7 @@ function drawPlayer(p, x, y, flipped) {
     ctx.fillText(p.username, x - camera.x + (t("bodies_1").width / 2) * 5, y - camera.y - 10);
 
     function drawItem(item) {
-        try{
+        try {
             if (item !== undefined && item !== "" && item !== 0) {
                 item = items[Number(item)]; // Convert ID to actual item
                 var texture;
@@ -155,7 +171,7 @@ function drawPlayer(p, x, y, flipped) {
                 } else texture = item.texture;
                 draw(texture, x, y, 5, flipped)
             }
-        } catch(e){}
+        } catch (e) {}
     }
 }
 
@@ -223,11 +239,11 @@ function renderUI() {
         }
     }
 
-    // Render Context menu
+   /*  // Render Context menu
     if (ctxMenuOpen) {
         ctx.fillStyle = "red";
         ctx.fillRect(ctxMenuLocation.x, ctxMenuLocation.y, 150, 200);
-    }
+    } */
 }
 
 
@@ -254,6 +270,34 @@ var onclickEvents = [
     }*/
 ]
 
+function getItemDimensions(id){
+    item = items[id];
+    var texture;
+    if(item.texture.constructor == Array) texture = item.texture[0];
+        else texture = item.texture;
+        texture = t(texture);
+    
+    return {width: texture.width, height: texture.height};
+}
+
+function checkEntityAt(x, y, padding){
+    for(var item of droppedItems){
+        var dim = getItemDimensions(item.id);
+        var width = dim.width;
+        var height = dim.height;
+        var deltaX = Math.abs(item.x + width - x);
+        var deltaY = Math.abs(item.y + height - y);
+        console.log(dim)
+        if(deltaX < padding + width && deltaY < padding + height){
+            return {
+                type: "droppedItem",
+                item: item
+            }
+        }
+    }
+    return false;
+}
+
 
 
 var ctxMenuOpen = false;
@@ -262,27 +306,47 @@ document.addEventListener('contextmenu', e => {
     var changed = false;
     //ctxMenuOpen = true;
 
-    for(var el of e.path){
-        try{
-            if(el.classList.toString().indexOf("inventory-slot") != -1){
+    for (var el of e.path) {
+        try {
+            if (el.classList.toString().indexOf("inventory-slot") != -1) {
                 var index = el.id;
                 // User click on an item in their inventory
                 contextOptions = [{
                     text: "Equip",
-                    action: () => {equip(index)}
-                },{
+                    action: () => {
+                        equip(index)
+                    }
+                }, {
                     text: "Unequip",
-                    action: () => {unequip(index)}
-                },{
+                    action: () => {
+                        unequip(index)
+                    }
+                }, {
                     text: "Drop item",
-                    action: () => {dropItem(index)}
+                    action: () => {
+                        dropItem(index)
+                    }
                 }]
                 changed = true;
+            } else if(el.id == "canvas"){
+                var entity = checkEntityAt(camera.x + mousePos.x, camera.y + mousePos.y, 0);
+                if(entity !== undefined){
+                    if(entity.type == "droppedItem"){
+                        contextOptions = [{
+                            text: "Pick",
+                            action: () => {
+                                socket.emit("pick", {x: entity.item.x, y: entity.item.y, id: entity.item.id});
+                                console.log("Emitted", {x: entity.item.x, y: entity.item.y, id: entity.item.id})
+                            }
+                        }]
+                        changed = true;
+                    }
+                }
             }
-        } catch(e){}
+        } catch (e) {}
     }
 
-    if(!changed) contextOptions = [];
+    if (!changed) contextOptions = [];
 
     openContextMenu(e.pageX, e.pageY);
     ctxMenuOpen = true;
@@ -290,18 +354,18 @@ document.addEventListener('contextmenu', e => {
 
 contextOptions = []
 
-function openContextMenu(x, y){
+function openContextMenu(x, y) {
     // Build context menu and place it
     contextMenuString = "";
-    for(i = 0; i < contextOptions.length; i++){
+    for (i = 0; i < contextOptions.length; i++) {
         contextMenuString += '<div class="menu-option" onclick="context(' + i + ')">' + contextOptions[i].text + '</div>';
     }
     document.getElementById("context-menu").innerHTML = '<div id="ctx-menu" class="menu">' + contextMenuString + '</div>';
-    document.getElementById("ctx-menu").style.top = y+"px";
-    document.getElementById("ctx-menu").style.left = x+"px";
+    document.getElementById("ctx-menu").style.top = y + "px";
+    document.getElementById("ctx-menu").style.left = x + "px";
 }
 
-function context(index){
+function context(index) {
     contextOptions[index].action()
 }
 
@@ -340,7 +404,7 @@ document.addEventListener("click", e => {
 
 document.addEventListener("keydown", e => {
     keysDown[e.keyCode] = true;
-    if(e.keyCode == 80 && editorOpen) placeTile();
+    if (e.keyCode == 80 && editorOpen) placeTile();
     if (e.keyCode == 71) {
         var username = prompt("Username to who you will give to", player.username);
         var itemID = prompt("Item ID", 1);
@@ -365,6 +429,8 @@ var previousPosition = {};
 
 function move(x, y) {
 
+
+    
     p = {
         x: player.position.x + x,
         y: player.position.y + y,
@@ -380,11 +446,12 @@ function move(x, y) {
             var breakPoint = 0;
             while (collision) {
                 breakPoint++;
-                if (breakPoint > 50) break;
-                if (collision.fromLeft) localMove.x -= 5;
-                if (collision.fromRight) localMove.x += 5;
-                if (collision.fromTop) localMove.y -= 5;
-                if (collision.fromBottom) localMove.y += 5;
+                if (breakPoint > 500) break;
+                var pushBackSpeed = 2;
+                if (collision.fromLeft) localMove.x -= pushBackSpeed;
+                if (collision.fromRight) localMove.x += pushBackSpeed;
+                if (collision.fromTop) localMove.y -= pushBackSpeed;
+                if (collision.fromBottom) localMove.y += pushBackSpeed;
 
                 p.x += localMove.x;
                 p.y += localMove.y;
@@ -433,7 +500,7 @@ function checkCollision(obj1, obj2) {
     if (obj1.texture.constructor == String) obj1.texture = t(obj1.texture)
     if (obj2.texture.constructor == String) obj2.texture = t(obj2.texture) */
 
-    if(editorOpen) return false;
+    if (editorOpen) return false;
 
     if (obj1.x < obj2.x + obj2.width &&
         obj1.x + obj1.width > obj2.x &&
@@ -480,7 +547,10 @@ function checkCollision(obj1, obj2) {
     return false;
 }
 
+
+
 function logic() {
+
     if (keyDown(87) || keyDown(38)) move(0, -1);
     if (keyDown(83) || keyDown(40)) move(0, 1);
     if (keyDown(65) || keyDown(37)) move(-1, 0);
@@ -587,9 +657,13 @@ function equip(index) {
     socket.emit("equip", index);
     console.log(index);
 }
+
 function unequip(index) {
     socket.emit("unequip", index);
 }
+
 function dropItem(index) {
-    socket.emit("dropItem", index);
+    socket.emit("drop", index);
 }
+
+socket.on("droppedItems", pack => droppedItems = pack)

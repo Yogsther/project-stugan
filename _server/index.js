@@ -23,7 +23,7 @@ var express = require("express");
 var app = express();
 
 var con = mysql.createPool({
-  connectionLimit : 10,
+  connectionLimit: 10,
   host: "127.0.0.1",
   user: "root",
   /*   password: "", */
@@ -42,7 +42,7 @@ var map = JSON.parse(fs.readFileSync("map.json", "utf8"));
 var players = new Array(); // All active players
 var npcs = new Array(); // All active NPC's
 var chat = new Array();
-var doppedItems = new Array();
+var droppedItems = new Array();
 
 var joinedMessages = ["appeared out of nowhere!", "jumped in!", "hopped in!", "joined the game!", "flew in!", "is here!", "dab!"]
 var leftMessages = ["is no longer with us.", "has left us.", "commited.", "went somewhere else.", "left the game.", "yeeeted."]
@@ -98,7 +98,8 @@ var server = app.listen(port, function () {
           map: map,
           items: items,
           player: player,
-          chat: chat
+          chat: chat,
+          droppedItems: droppedItems
         })
       }
     })
@@ -125,7 +126,7 @@ var server = app.listen(port, function () {
     clientPlayerData = new Array();
     for (player of players) {
 
-      if(Math.floor(Math.random() * (ticks * 4)) == 0 ){
+      if (Math.floor(Math.random() * (ticks * 4)) == 0) {
         player.blinking = 5;
       }
 
@@ -138,7 +139,7 @@ var server = app.listen(port, function () {
         closedEyes: player.blinking > 0
       })
 
-      if(player.blinking > 0 ) player.blinking--;
+      if (player.blinking > 0) player.blinking--;
     }
 
     /* Send that data to all players */
@@ -267,14 +268,29 @@ var server = app.listen(port, function () {
 
     socket.on("give", pack => give(pack.username, pack.id));
     socket.on("equip", index => {
-      try{
+      try {
         equip(getPlayer().username, index)
-      } catch(e){}
+      } catch (e) {}
     });
     socket.on("unequip", index => {
-      try{
+      try {
         unequip(getPlayer().username, index)
-      } catch(e){}
+      } catch (e) {}
+    });
+
+    socket.on("drop", index => {
+      try {
+        drop(getPlayer().username, index)
+      } catch (e) {
+
+      }
+    });
+
+    socket.on("pick", item => {
+      try {
+        pick(getPlayer().username, item)
+      } catch (e) {
+      }
     });
 
     function getPlayerSocket(username) {
@@ -296,7 +312,7 @@ var server = app.listen(port, function () {
       return username.toLowerCase() + "_" + password;
     }
 
-    
+
     function give(username, itemID, amount) {
       if (amount === undefined) amount = 1;
       con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
@@ -307,9 +323,14 @@ var server = app.listen(port, function () {
           else inventory = JSON.parse(inventory);
 
           inventory.push(itemID);
-          var player = getPlayerFromSocket(socket.id);
-          player.inventory = inventory;
-        
+          var player = getPlayer();
+
+          for (player of players) {
+            if (player.username == username) {
+              player.inventory = inventory;
+            }
+          }
+
           con.query("UPDATE users SET inventory = '" + JSON.stringify(inventory) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
             if (!error) {
               io.to(getPlayerSocket(username)).emit("update", player);
@@ -322,7 +343,7 @@ var server = app.listen(port, function () {
 
     function equip(username, index) {
       var itemID = player.inventory[index];
-      var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt", "eyes", "mouth", "glasses"]
+      var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt", "eyes", "mouth", "glasses", "makeup"]
       if (wearableTypes.indexOf(items[itemID].type) != -1) {
         con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
           if (!error) {
@@ -338,11 +359,11 @@ var server = app.listen(port, function () {
             }
             con.query("UPDATE users SET outfit = '" + JSON.stringify(outfit) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
               if (!error) {
-                  for(player of players){
-                    if(player.username == username){
-                      player.outfit = outfit;
-                    }
+                for (player of players) {
+                  if (player.username == username) {
+                    player.outfit = outfit;
                   }
+                }
               } else throw error;
             })
           } else throw error;
@@ -354,7 +375,7 @@ var server = app.listen(port, function () {
 
     function unequip(username, index) {
       var itemID = player.inventory[index];
-      var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt", "eyes", "mouth", "glasses"]
+      var wearableTypes = ["makeup", "beard", "hair", "headwear", "pants", "shirt", "mouth", "glasses"]
       if (wearableTypes.indexOf(items[itemID].type) != -1) {
         con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
           if (!error) {
@@ -367,11 +388,11 @@ var server = app.listen(port, function () {
 
             con.query("UPDATE users SET outfit = '" + JSON.stringify(outfit) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
               if (!error) {
-                  for(player of players){
-                    if(player.username == username){
-                      player.outfit = outfit;
-                    }
+                for (player of players) {
+                  if (player.username == username) {
+                    player.outfit = outfit;
                   }
+                }
               } else throw error;
             })
           } else throw error;
@@ -381,7 +402,110 @@ var server = app.listen(port, function () {
       }
     }
 
+    function dropItem(x, y, id) {
+      droppedItems.push({
+        x: x,
+        y: y,
+        id: id,
+        droppedAt: Date.now()
+      })
 
+      for (p of players) {
+        io.to(p.socketid).emit("droppedItems", droppedItems);
+      }
+
+    }
+
+    function removeDroppedItem(index){
+      droppedItems.splice(index, 1);
+      for (p of players) {
+        io.to(p.socketid).emit("droppedItems", droppedItems);
+      }
+    }
+
+    function drop(username, index) {
+      var itemID = player.inventory[index];
+      con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+        if (!error) {
+          if (result.length < 1) return;
+          inventory = result[0].inventory;
+          if (inventory == "") inventory = [];
+          else inventory = JSON.parse(inventory);
+
+          if (items[itemID].droppable === false) {
+            console.log("ERR: Item is not droppable!");
+            return;
+          }
+
+          var player = getPlayer();
+
+          for(item in player.outfit){
+            if(player.outfit[item] == itemID){
+              var count = 0;
+              for(itm of player.inventory){
+                if(itm == itemID) count++;
+              }
+              if(count == 1){
+                console.log("ERR: User is wearing this item!")
+                return;
+              }
+            }
+          }
+
+          inventory.splice(index, 1); // Remove item from users inventory
+         
+          if (player !== undefined) {
+            dropItem(player.position.x, player.position.y, itemID)
+          }
+
+          con.query("UPDATE users SET inventory = '" + JSON.stringify(inventory) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+            if (!error) {
+              for (player of players) {
+                if (player.username == username) {
+                  player.inventory = inventory;
+                }
+              }
+
+              io.to(getPlayerSocket(username)).emit("update", player);
+
+            } else throw error;
+          })
+        } else throw error;
+      })
+    }
+
+    
+    function pick(username, item) {
+      con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+        if (!error) {
+          if (result.length < 1) return;
+          inventory = result[0].inventory;
+          if (inventory == "") inventory = [];
+          else inventory = JSON.parse(inventory);
+
+          var player = getPlayer();
+
+          for(i = 0; i < droppedItems.length; i++){
+            droppedItem = droppedItems[i];
+            if(droppedItem.id == item.id && droppedItem.x == item.x && droppedItem.y == item.y){
+              inventory.push(droppedItem.id);
+              removeDroppedItem(i);
+            } 
+          }
+         
+          con.query("UPDATE users SET inventory = '" + JSON.stringify(inventory) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+            if (!error) {
+              for (player of players) {
+                if (player.username == username) {
+                  player.inventory = inventory;
+                }
+              }
+              io.to(getPlayerSocket(username)).emit("update", player);
+            } else throw error;
+          })
+        } else throw error;
+      })
+    }
 
 
 

@@ -23,7 +23,6 @@ function login(){
     socket.emit("login", getCredentials())
     localStorage.setItem("cred", JSON.stringify(getCredentials()))
     // TODO: Move all of this below to a callback
-    if(!joined) heartbeat();
     joined = true; 
 }
 

@@ -174,8 +174,8 @@ var server = app.listen(port, function () {
     socket.on("move", movement => {
       player = getPlayer();
       if (player) {
-        p.position.x += movement.x;
-        p.position.y += movement.y;
+        p.position.x = movement.x;
+        p.position.y = movement.y;
         p.flipped = movement.flipped;
       }
     })

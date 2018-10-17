@@ -55,25 +55,30 @@ socket.on("tick", package => {
     if (localMove.x != 0 || localMove.y != 0) {
         stillFrames = 0;
         socket.emit("move", {
-            x: localMove.x,
-            y: localMove.y,
+            x: getPlayerPosition().x,
+            y: getPlayerPosition().y,
             flipped: player.flipped
         });
-        localPos.x = localMove.x;
-        localPos.y = localMove.y;
-        localMove = {
-            x: 0,
-            y: 0
-        }; // Reset local move.
+
     } else {
         stillFrames++;
     }
 
-    if(stillFrames > 2){
-        localPos = {
+    if (stillFrames > 2) {
+
+        localMove = {
             x: 0,
             y: 0
-        }; // Reset local pos
+        }; // Reset local move.
+
+        // Update to exact position
+        for (p of players) {
+            if (p.username == player.username) {
+                player.position.x = p.position.x;
+                player.position.y = p.position.y;
+            }
+        }
+
     }
 
     players = package.players;
@@ -96,9 +101,9 @@ function heartbeat() {
 
     logic();
 
- /*    try { */
-        render();
-   /*  } catch (e) {} */
+    /*    try { */
+    render();
+    /*  } catch (e) {} */
 
 
     requestAnimationFrame(heartbeat);
@@ -113,15 +118,22 @@ function render() {
     renderUI();
 }
 
-function renderDroppedItems(){
-    if(!droppedItems) return;
-    for(itm of droppedItems){
+function renderDroppedItems() {
+    if (!droppedItems) return;
+    for (itm of droppedItems) {
         var item = items[Number(itm.id)];
         var texture;
         if (item.texture.constructor == Array) { // If item is animated
             texture = item.texture[Math.round(globalTick / 10) % item.texture.length];
         } else texture = item.texture;
-        draw(texture, itm.x, itm.y + (Math.sin((globalTick + itm.id*5)/5)*5), 3, false)
+        draw(texture, itm.x, itm.y + (Math.sin((globalTick + itm.id * 5) / 5) * 5), 3, false)
+    }
+}
+
+function getPlayerPosition() {
+    return {
+        x: player.position.x + localMove.x,
+        y: player.position.y + localMove.y
     }
 }
 
@@ -129,10 +141,8 @@ function renderPlayers() {
     // Draw players
     for (p of players) { // Draw own player with localMove
         if (p.username == player.username) {
-            drawPlayer(p, player.position.x, player.position.y, player.flipped)
+            drawPlayer(p, getPlayerPosition().x, getPlayerPosition().y, player.flipped)
             // Update private player position
-            player.position.x = p.position.x + localMove.x + localPos.x;
-            player.position.y = p.position.y + localMove.y + localPos.y;
         } else {
             drawPlayer(p, p.position.x, p.position.y, p.flipped, p.outfit);
         }
@@ -247,11 +257,11 @@ function renderUI() {
         }
     }
 
-   /*  // Render Context menu
-    if (ctxMenuOpen) {
-        ctx.fillStyle = "red";
-        ctx.fillRect(ctxMenuLocation.x, ctxMenuLocation.y, 150, 200);
-    } */
+    /*  // Render Context menu
+     if (ctxMenuOpen) {
+         ctx.fillStyle = "red";
+         ctx.fillRect(ctxMenuLocation.x, ctxMenuLocation.y, 150, 200);
+     } */
 }
 
 
@@ -278,25 +288,27 @@ var onclickEvents = [
     }*/
 ]
 
-function getItemDimensions(id){
+function getItemDimensions(id) {
     item = items[id];
     var texture;
-    if(item.texture.constructor == Array) texture = item.texture[0];
-        else texture = item.texture;
-        texture = t(texture);
-    
-    return {width: texture.width, height: texture.height};
+    if (item.texture.constructor == Array) texture = item.texture[0];
+    else texture = item.texture;
+    texture = t(texture);
+
+    return {
+        width: texture.width,
+        height: texture.height
+    };
 }
 
-function checkEntityAt(x, y, padding){
-    for(var item of droppedItems){
+function checkEntityAt(x, y, padding) {
+    for (var item of droppedItems) {
         var dim = getItemDimensions(item.id);
         var width = dim.width;
         var height = dim.height;
         var deltaX = Math.abs(item.x + width - x);
         var deltaY = Math.abs(item.y + height - y);
-        console.log(dim)
-        if(deltaX < padding + width && deltaY < padding + height){
+        if (deltaX < padding + width && deltaY < padding + height) {
             return {
                 type: "droppedItem",
                 item: item
@@ -336,15 +348,18 @@ document.addEventListener('contextmenu', e => {
                     }
                 }]
                 changed = true;
-            } else if(el.id == "canvas"){
+            } else if (el.id == "canvas") {
                 var entity = checkEntityAt(camera.x + mousePos.x, camera.y + mousePos.y, 0);
-                if(entity !== undefined){
-                    if(entity.type == "droppedItem"){
+                if (entity !== undefined) {
+                    if (entity.type == "droppedItem") {
                         contextOptions = [{
                             text: "Pick",
                             action: () => {
-                                socket.emit("pick", {x: entity.item.x, y: entity.item.y, id: entity.item.id});
-                                console.log("Emitted", {x: entity.item.x, y: entity.item.y, id: entity.item.id})
+                                socket.emit("pick", {
+                                    x: entity.item.x,
+                                    y: entity.item.y,
+                                    id: entity.item.id
+                                });
                             }
                         }]
                         changed = true;
@@ -438,10 +453,10 @@ var previousPosition = {};
 function move(x, y) {
 
 
-    
+
     p = {
-        x: player.position.x + x,
-        y: player.position.y + y,
+        x: getPlayerPosition().x + x,
+        y: getPlayerPosition().y + y,
         width: t("bodies_1").width * 6,
         height: t("bodies_1").width * 6
     };
@@ -455,7 +470,7 @@ function move(x, y) {
             while (collision) {
                 breakPoint++;
                 if (breakPoint > 500) break;
-                var pushBackSpeed = 5;
+                var pushBackSpeed = 10;
                 if (collision.fromLeft) localMove.x -= pushBackSpeed;
                 if (collision.fromRight) localMove.x += pushBackSpeed;
                 if (collision.fromTop) localMove.y -= pushBackSpeed;
@@ -565,8 +580,8 @@ function logic() {
     if (keyDown(68) || keyDown(39)) move(1, 0);
 
     try {
-        camera.x = (player.position.x - (canvas.width / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
-        camera.y = (player.position.y - (canvas.height / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
+        camera.x = (getPlayerPosition().x - (canvas.width / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
+        camera.y = (getPlayerPosition().y - (canvas.height / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
     } catch (e) {}
 }
 

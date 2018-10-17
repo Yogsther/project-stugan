@@ -48,20 +48,28 @@ socket.on("update", package => {
     loadInventory();
 })
 
+var stillFrames = 0;
+
 // Updated each tick
 socket.on("tick", package => {
     if (localMove.x != 0 || localMove.y != 0) {
+        stillFrames = 0;
         socket.emit("move", {
             x: localMove.x,
             y: localMove.y,
             flipped: player.flipped
         });
-        localPos = Object.create(localMove);
+        localPos.x = localMove.x;
+        localPos.y = localMove.y;
         localMove = {
             x: 0,
             y: 0
         }; // Reset local move.
     } else {
+        stillFrames++;
+    }
+
+    if(stillFrames > 2){
         localPos = {
             x: 0,
             y: 0
@@ -121,7 +129,7 @@ function renderPlayers() {
     // Draw players
     for (p of players) { // Draw own player with localMove
         if (p.username == player.username) {
-            drawPlayer(p, p.position.x + localMove.x + localPos.x, p.position.y + localMove.y + localPos.y, player.flipped)
+            drawPlayer(p, player.position.x, player.position.y, player.flipped)
             // Update private player position
             player.position.x = p.position.x + localMove.x + localPos.x;
             player.position.y = p.position.y + localMove.y + localPos.y;
@@ -447,7 +455,7 @@ function move(x, y) {
             while (collision) {
                 breakPoint++;
                 if (breakPoint > 500) break;
-                var pushBackSpeed = 2;
+                var pushBackSpeed = 5;
                 if (collision.fromLeft) localMove.x -= pushBackSpeed;
                 if (collision.fromRight) localMove.x += pushBackSpeed;
                 if (collision.fromTop) localMove.y -= pushBackSpeed;

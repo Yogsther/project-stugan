@@ -1,6 +1,6 @@
 
 // VERY BAD AND INSECURE, TODO - IMPLEMENT THE TOKEN SYSTEM!
-if(localStorage.getItem("cred") !== undefined){
+if(localStorage.getItem("cred") != undefined && localStorage.getItem("cred") != ""){
     cred = JSON.parse(localStorage.getItem("cred"));
     document.getElementById("username").value = cred.username;
     document.getElementById("password").value = cred.password;
@@ -26,6 +26,19 @@ function login(){
     joined = true; 
 }
 
+function logout(){
+    localStorage.setItem("cred", "");
+    socket.emit("leave");
+    joined = false;
+}
+
+function openLoginWindow(){
+    document.getElementById("login-background").style.visibility = "visible";
+}
+
+function closeLoginWindow(){
+    document.getElementById("login-background").style.visibility = "hidden";
+}
 function sign_up(){
     socket.emit("sign_up", getCredentials())
 }

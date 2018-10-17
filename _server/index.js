@@ -183,6 +183,9 @@ var server = app.listen(port, function () {
     socket.on("disconnect", () => {
       disconnectPlayer(socket.id);
     })
+    socket.on("leave", () => {
+      disconnectPlayer(socket.id);
+    })
 
     socket.on("chat", message => {
       var player = getPlayer();
@@ -266,7 +269,16 @@ var server = app.listen(port, function () {
 
 
 
-    socket.on("give", pack => give(pack.username, pack.id));
+    socket.on("give", pack => {
+      if (pack.id == "all") {
+        for (var item of items) {
+          if (item != null) give(pack.username, item.id);
+        }
+      } else {
+        give(pack.username, pack.id)
+      }
+
+    });
     socket.on("equip", index => {
       try {
         equip(getPlayer().username, index)
@@ -289,8 +301,7 @@ var server = app.listen(port, function () {
     socket.on("pick", item => {
       try {
         pick(getPlayer().username, item)
-      } catch (e) {
-      }
+      } catch (e) {}
     });
 
     function getPlayerSocket(username) {
@@ -342,64 +353,50 @@ var server = app.listen(port, function () {
 
 
     function equip(username, index) {
+      var player = getPlayer();
       var itemID = player.inventory[index];
       var wearableTypes = ["body", "beard", "hair", "headwear", "pants", "shirt", "eyes", "mouth", "glasses", "makeup"]
       if (wearableTypes.indexOf(items[itemID].type) != -1) {
-        con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+        if (player.inventory.indexOf(itemID.toString()) != -1 || player.inventory.indexOf(itemID) != -1) player.outfit[items[itemID].type] = itemID;
+        else {
+          console.log("WARN: Does not own item!");
+          return;
+        }
+        con.query("UPDATE users SET outfit = '" + JSON.stringify(player.outfit) + "' WHERE upper(username) = " + sanitize.escape(player.username).toUpperCase(), (error, result) => {
           if (!error) {
-            if (result.length < 1) return;
-            outfit = result[0].outfit;
-            if (outfit == "") outfit = {};
-            else outfit = JSON.parse(outfit);
-
-            if (JSON.parse(result[0].inventory).indexOf(itemID.toString()) != -1) outfit[items[itemID].type] = itemID;
-            else {
-              console.log("WARN: Does not own item!", JSON.parse(result[0].inventory));
-              return;
+            for (p of players) {
+              if (p.username == player.username) {
+                p.outfit = player.outfit;
+              }
             }
-            con.query("UPDATE users SET outfit = '" + JSON.stringify(outfit) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
-              if (!error) {
-                for (player of players) {
-                  if (player.username == username) {
-                    player.outfit = outfit;
-                  }
-                }
-              } else throw error;
-            })
           } else throw error;
         })
-      } else {
-        console.log("WARN: not a wearable item!");
-      }
+      } else throw error;
     }
 
+
+
+
     function unequip(username, index) {
+      var player = getPlayer();
       var itemID = player.inventory[index];
       var wearableTypes = ["makeup", "beard", "hair", "headwear", "pants", "shirt", "mouth", "glasses"]
       if (wearableTypes.indexOf(items[itemID].type) != -1) {
-        con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+
+        outfit = player.outfit
+
+        outfit[items[itemID].type] = "0";
+
+        con.query("UPDATE users SET outfit = '" + JSON.stringify(outfit) + "' WHERE upper(username) = " + sanitize.escape(player.username).toUpperCase(), (error, result) => {
           if (!error) {
-            if (result.length < 1) return;
-            outfit = result[0].outfit;
-            if (outfit == "") outfit = {};
-            else outfit = JSON.parse(outfit);
-
-            outfit[items[itemID].type] = "0";
-
-            con.query("UPDATE users SET outfit = '" + JSON.stringify(outfit) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
-              if (!error) {
-                for (player of players) {
-                  if (player.username == username) {
-                    player.outfit = outfit;
-                  }
-                }
-              } else throw error;
-            })
+            for (player of players) {
+              if (player.username == username) {
+                player.outfit = outfit;
+              }
+            }
           } else throw error;
         })
-      } else {
-        console.log("WARN: not a wearable item!");
-      }
+      } else throw error;
     }
 
     function dropItem(x, y, id) {
@@ -416,7 +413,7 @@ var server = app.listen(port, function () {
 
     }
 
-    function removeDroppedItem(index){
+    function removeDroppedItem(index) {
       droppedItems.splice(index, 1);
       for (p of players) {
         io.to(p.socketid).emit("droppedItems", droppedItems);
@@ -424,85 +421,64 @@ var server = app.listen(port, function () {
     }
 
     function drop(username, index) {
+      var player = getPlayer();
       var itemID = player.inventory[index];
-      con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
-        if (!error) {
-          if (result.length < 1) return;
-          inventory = result[0].inventory;
-          if (inventory == "") inventory = [];
-          else inventory = JSON.parse(inventory);
 
-          if (items[itemID].droppable === false) {
-            console.log("ERR: Item is not droppable!");
+      if (items[itemID].droppable === false) {
+        console.log("ERR: Item is not droppable!");
+        return;
+      }
+
+
+
+      for (item in player.outfit) {
+        if (player.outfit[item] == itemID) {
+          var count = 0;
+          for (itm of player.inventory) {
+            if (itm == itemID) count++;
+          }
+          if (count == 1) {
+            console.log("ERR: User is wearing this item!")
             return;
           }
+        }
+      }
 
-          var player = getPlayer();
+      player.inventory.splice(index, 1); // Remove item from users inventory
 
-          for(item in player.outfit){
-            if(player.outfit[item] == itemID){
-              var count = 0;
-              for(itm of player.inventory){
-                if(itm == itemID) count++;
-              }
-              if(count == 1){
-                console.log("ERR: User is wearing this item!")
-                return;
-              }
-            }
-          }
+      if (player !== undefined) {
+        dropItem(player.position.x, player.position.y, itemID)
+      }
 
-          inventory.splice(index, 1); // Remove item from users inventory
-         
-          if (player !== undefined) {
-            dropItem(player.position.x, player.position.y, itemID)
-          }
+      savePlayer(player);
 
-          con.query("UPDATE users SET inventory = '" + JSON.stringify(inventory) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
-            if (!error) {
-              for (player of players) {
-                if (player.username == username) {
-                  player.inventory = inventory;
-                }
-              }
-
-              io.to(getPlayerSocket(username)).emit("update", player);
-
-            } else throw error;
-          })
-        } else throw error;
-      })
     }
 
-    
+
     function pick(username, item) {
-      con.query("SELECT * FROM users WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
+
+      var player = getPlayer();
+
+      for (i = 0; i < droppedItems.length; i++) {
+        droppedItem = droppedItems[i];
+        if (droppedItem.id == item.id && droppedItem.x == item.x && droppedItem.y == item.y) {
+          player.inventory.push(droppedItem.id);
+          removeDroppedItem(i);
+        }
+      }
+
+      savePlayer(player);
+    }
+
+    function savePlayer(player) {
+      con.query("UPDATE users SET inventory = '" + JSON.stringify(player.inventory) + "' WHERE upper(username) = " + sanitize.escape(player.username).toUpperCase(), (error, result) => {
         if (!error) {
-          if (result.length < 1) return;
-          inventory = result[0].inventory;
-          if (inventory == "") inventory = [];
-          else inventory = JSON.parse(inventory);
-
-          var player = getPlayer();
-
-          for(i = 0; i < droppedItems.length; i++){
-            droppedItem = droppedItems[i];
-            if(droppedItem.id == item.id && droppedItem.x == item.x && droppedItem.y == item.y){
-              inventory.push(droppedItem.id);
-              removeDroppedItem(i);
-            } 
+          for (p of players) {
+            if (player.username == p.username) {
+              p.inventory = player.inventory;
+              io.to(p.socketid).emit("update", player);
+            }
           }
-         
-          con.query("UPDATE users SET inventory = '" + JSON.stringify(inventory) + "' WHERE upper(username) = " + sanitize.escape(username).toUpperCase(), (error, result) => {
-            if (!error) {
-              for (player of players) {
-                if (player.username == username) {
-                  player.inventory = inventory;
-                }
-              }
-              io.to(getPlayerSocket(username)).emit("update", player);
-            } else throw error;
-          })
         } else throw error;
       })
     }

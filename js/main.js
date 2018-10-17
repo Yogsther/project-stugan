@@ -30,6 +30,7 @@ var localPos = {
 var keysDown = []; // Current keys down
 var joined = false;
 var globalTick = 0;
+var lastAmountOfPlayers = 0; // Amount of players on the server
 
 
 // Updated on join
@@ -40,11 +41,12 @@ socket.on("game", package => {
     droppedItems = package.droppedItems;
     for (pack of package.chat) addChatMessage(pack);
     loadInventory();
+    closeLoginWindow();
     heartbeat();
 })
 
 socket.on("update", package => {
-    player = package;
+    player.inventory = package.inventory;
     loadInventory();
 })
 
@@ -79,9 +81,17 @@ socket.on("tick", package => {
             }
         }
 
+
+
     }
 
+
     players = package.players;
+
+    if (players.length != lastAmountOfPlayers) {
+        document.title = "Project Stugan | " + players.length;
+        lastAmountOfPlayers = players.length;
+    }
 
     function sortByHeight(a, b) {
         if (a.position.y < b.position.y)
@@ -97,6 +107,12 @@ socket.on("tick", package => {
 // Main loop, render and logic
 function heartbeat() {
 
+    if (!socket.connected || !joined) {
+        openLoginWindow();
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
     globalTick++; // Increase global counter each frame
 
     logic();
@@ -319,13 +335,8 @@ function checkEntityAt(x, y, padding) {
 }
 
 
-
-var ctxMenuOpen = false;
-document.addEventListener('contextmenu', e => {
-    e.preventDefault()
+function generateContextMenu(e) {
     var changed = false;
-    //ctxMenuOpen = true;
-
     for (var el of e.path) {
         try {
             if (el.classList.toString().indexOf("inventory-slot") != -1) {
@@ -370,6 +381,15 @@ document.addEventListener('contextmenu', e => {
     }
 
     if (!changed) contextOptions = [];
+}
+
+
+var ctxMenuOpen = false;
+document.addEventListener('contextmenu', e => {
+    e.preventDefault()
+    var changed = false;
+
+    generateContextMenu(e);
 
     openContextMenu(e.pageX, e.pageY);
     ctxMenuOpen = true;
@@ -393,7 +413,7 @@ function context(index) {
 }
 
 
-canvas.addEventListener("click", e => {
+document.addEventListener("click", e => {
     var rect = canvas.getBoundingClientRect();
     var x = Math.round(e.clientX - rect.left);
     var y = Math.round(e.clientY - rect.top);
@@ -405,30 +425,34 @@ canvas.addEventListener("click", e => {
 
     // Call events
 
-    var events = new Array();
+    /* var events = new Array();
     onclickEvents.forEach(ev => events.push(ev));
     /* if(inventoryOpen) inventoryEvents.forEach(ev => events.push(ev)); */
-
+    /*
     for (event of events) {
         if (event.top.x < mousePos.x && event.bottom.x > mousePos.x &&
             event.top.y < mousePos.y && event.bottom.y > mousePos.y) {
             event.call();
         }
+    } */
+
+    generateContextMenu(e);
+
+    if (contextOptions.length > 0) {
+        contextOptions[0].action();
     }
 
     ctxMenuOpen = false;
-})
-
-document.addEventListener("click", e => {
     document.getElementById("context-menu").innerHTML = "";
 })
 
 
 
+
 document.addEventListener("keydown", e => {
     keysDown[e.keyCode] = true;
-    if (e.keyCode == 80 && editorOpen) placeTile();
-    if (e.keyCode == 71) {
+    if (e.keyCode == 80 && editorOpen && document.activeElement == document.body) placeTile();
+    if (e.keyCode == 71 && document.activeElement == document.body) {
         var username = prompt("Username to who you will give to", player.username);
         var itemID = prompt("Item ID", 1);
         socket.emit("give", {

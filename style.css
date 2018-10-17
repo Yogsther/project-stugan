@@ -34,7 +34,6 @@ body {
   position: relative;
   margin-top: 25px;
   cursor: pointer;
-  background-image: url("textures/misc/splash.png");
   z-index: 10;
 
   -webkit-touch-callout: none;
@@ -212,3 +211,80 @@ a:active {
 .menu-option:hover{
   background: rgb(0, 0, 0);
 }
+
+#login-background{
+  width: 100%;
+  height: 100vh;
+  position: absolute;
+  background: rgba(0, 0, 0, 0.829);
+  top: 0px;
+  left: 0px;
+  z-index: 100;
+}
+
+#login-page{
+  width: 400px;
+  height: 400px;
+  background: rgb(31, 31, 31);
+  position: relative;
+  margin: 0 auto;
+  margin-top: 150px;
+}
+
+#login-text, #login-sword{
+  height: 200px;
+  position: absolute;
+  margin-left: -80px;
+  top: -120px;
+}
+
+#login-sword{
+  animation: sword 5s infinite ease-in-out;
+}
+
+@keyframes sword {
+  0% { left: -0px; }
+  50% { left: -30px; }
+  100% { left: -0px; }
+}
+
+#username, #password{
+  width: 94%;
+  margin: 0 auto;
+  display: block;
+  position: relative;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  height: 30px;
+  padding: 3%;
+  border: none;
+  font-size: 20px;
+  background: rgb(44, 44, 44);
+  color: white;
+}
+
+#login-cred{
+  top: 100px;
+  width: 90%;
+  position: relative;
+  margin: 0 auto;
+  color: rgb(231, 83, 83);
+}
+
+.btn{
+  background: rgb(214, 58, 58);
+  font-size: 18px;
+  width: 49%;
+  border: none;
+  height: 40px;
+  margin: 0 auto;
+  transition: all .1s;
+  margin-bottom: 5px;
+}
+
+.btn:hover{
+  background: rgb(65, 65, 65);
+  color: white;
+}
+
+button:focus {outline:0;}

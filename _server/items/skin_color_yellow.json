@@ -1,0 +1,6 @@
+{
+    "name": "Yellow skin color",
+    "id": 13,
+    "type": "body",
+    "texture": "bodies/player_body_yellow.png"
+}

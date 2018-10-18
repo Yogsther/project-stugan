@@ -1,3 +1,5 @@
-#### Project Stugan
+## Project Stugan
 
-![Screenshot](textures/misc/screenshot.png)
+![Screenshot](textures/misc/logo_medium.png)
+
+

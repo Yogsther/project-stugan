@@ -1,0 +1,16 @@
+{
+    "short_name": "Stugan",
+    "name": "Project Stugan",
+    "icons": [
+      {
+        "src": "/textures/misc/icon.png",
+        "type": "image/png",
+        "sizes": "500x500"
+      }
+    ],
+    "start_url": "/",
+    "background_color": "#111",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#d63a3a"
+  }

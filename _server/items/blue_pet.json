@@ -1,0 +1,8 @@
+{
+    "name": "BLUE",
+    "id": 100,
+    "type": "pet",
+    "rarity": "rare",
+    "texture": "pets/blue.png",
+    "icon": "pets/blue_icon.png"
+}

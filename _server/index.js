@@ -410,7 +410,6 @@ var server = app.listen(port, function () {
       for (p of players) {
         io.to(p.socketid).emit("droppedItems", droppedItems);
       }
-
     }
 
     function removeDroppedItem(index) {
@@ -535,6 +534,7 @@ function loadItemsLibary() {
   var jsons = fs.readdirSync("items");
   for (json of jsons) {
     item = JSON.parse(fs.readFileSync("items/" + json));
+    if(!item.rarity) item.rarity = "common";
     items[item.id] = item;
   }
   console.log("Loaded " + jsons.length + " items.");

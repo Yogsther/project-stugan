@@ -1,5 +1,5 @@
-var socket = io.connect("nut.livfor.it:5234");
-//var socket = io.connect("localhost:5234");
+//var socket = io.connect("nut.livfor.it:5234");
+var socket = io.connect("localhost:5234");
 
 
 const canvas = document.getElementById("canvas");
@@ -605,8 +605,17 @@ function logic() {
     if (keyDown(68) || keyDown(39)) move(1, 0);
 
     try {
-        camera.x = (getPlayerPosition().x - (canvas.width / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
-        camera.y = (getPlayerPosition().y - (canvas.height / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
+        var ideal = {};
+        ideal.x = (getPlayerPosition().x - (canvas.width / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2;
+        ideal.y = (getPlayerPosition().y - (canvas.height / 2) * camera.zoom) + (t("bodies_1").width * 5) / 2; 
+        var cameraSpeed = 5;
+        var cameraSize = 5;
+        var devider = 15;
+        if(ideal.x - camera.x > cameraSize) camera.x+=(Math.abs(ideal.x - camera.x) / devider);
+        if(ideal.x - camera.x < -cameraSize) camera.x-=(Math.abs(ideal.x - camera.x) / devider)
+        
+        if(ideal.y - camera.y > cameraSize) camera.y+=(Math.abs(ideal.y - camera.y) / devider)
+        if(ideal.y - camera.y < -cameraSize) camera.y-=(Math.abs(ideal.y - camera.y) / devider)
     } catch (e) {}
 }
 
@@ -691,7 +700,8 @@ function loadInventory() {
         var animated = "";
         var texture = "";
 
-        if (item.texture.constructor == Array) {
+        if(item.icon) texture = item.icon;
+        else if (item.texture.constructor == Array) {
             animated = "animated";
             texture = item.texture[0];
         } else texture = item.texture;
